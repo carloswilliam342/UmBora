@@ -19,7 +19,7 @@ export default function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2000); // mostra splash por 2 segundos
+    }, 2000); // mostra por 2 segundos o splash screen
     return () => clearTimeout(timer);
   }, []);
 
