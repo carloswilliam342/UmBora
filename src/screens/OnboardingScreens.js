@@ -25,7 +25,7 @@ const OnboardingScreens = () => {
       backgroundColor: colors.primary,
       image: (
         <Image
-          source={{ uri: 'https://via.placeholder.com/300x300/4CAF50/FFFFFF?text=🚗' }}
+          source={require('../../assets/onboarding-1.png')}
           style={{ width: 250, height: 250 }}
           resizeMode="contain"
         />
@@ -37,7 +37,7 @@ const OnboardingScreens = () => {
       backgroundColor: colors.secondary,
       image: (
         <Image
-          source={{ uri: 'https://via.placeholder.com/300x300/81C784/FFFFFF?text=👤' }}
+          source={require('../../assets/onboarding-2.png')}
           style={{ width: 250, height: 250 }}
           resizeMode="contain"
         />
@@ -49,7 +49,7 @@ const OnboardingScreens = () => {
       backgroundColor: colors.primary,
       image: (
         <Image
-          source={{ uri: 'https://via.placeholder.com/300x300/4CAF50/FFFFFF?text=📍' }}
+          source={require('../../assets/onboarding-3.png')}
           style={{ width: 250, height: 250 }}
           resizeMode="contain"
         />
