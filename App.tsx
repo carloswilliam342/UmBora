@@ -33,9 +33,9 @@ export default function App() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Onboarding" component={OnboardingScreens} />
         <Stack.Screen name="Auth" component={AuthScreens} />
-        <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
-        {/* <Stack.Screen name="PhoneVerification" component={PhoneVerificationScreen} /> */}
+        <Stack.Screen name="PhoneVerification" component={PhoneVerificationScreen} />
+         <Stack.Screen name="Login" component={LoginScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

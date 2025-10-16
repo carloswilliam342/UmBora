@@ -32,7 +32,10 @@ const RegisterScreen = () => {
     }));
   };
 
-  const handleRegister = () => {
+  // Substitua 'SEU_IP_LOCAL' pelo IP da sua máquina na rede
+  const API_URL = 'http://10.0.0.111:3000/api';
+
+  const handleRegister = async () => {
     // Validação básica
     if (!formData.name || !formData.email || !formData.phone || !formData.password) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos');
@@ -49,11 +52,33 @@ const RegisterScreen = () => {
       return;
     }
 
-    // Navegar para verificação do telefone
-    navigation.navigate('PhoneVerification', { 
-      phone: formData.phone,
-      userData: formData 
-    });
+    try {
+      const response = await fetch(`${API_URL}/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) { // Status 201
+        Alert.alert('Sucesso!', data.message, [
+          { text: 'Fazer Login', onPress: () => navigation.navigate('Login') }
+        ]);
+      } else { // Erros (4xx, 5xx)
+        Alert.alert('Erro no Cadastro', data.message || 'Não foi possível criar a conta.');
+      }
+    } catch (error) {
+      console.error('Erro de rede:', error);
+      Alert.alert('Erro', 'Não foi possível conectar ao servidor. Verifique sua conexão e o endereço da API.');
+    }
   };
 
   const handleFacebookLogin = () => {

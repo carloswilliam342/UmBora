@@ -29,23 +29,41 @@ const LoginScreen = () => {
     }));
   };
 
-  const handleLogin = () => {
+  // Substitua 'SEU_IP_LOCAL' pelo IP da sua máquina na rede
+  const API_URL = 'http://10.0.0.111:3000/api';
+
+  const handleLogin = async () => {
     // Validação básica
     if (!formData.email || !formData.password) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos');
       return;
     }
 
-    // Aqui você implementaria a lógica de login
-    Alert.alert('Sucesso', 'Login realizado com sucesso!', [
-      {
-        text: 'OK',
-        onPress: () => {
-          // Navegar para a tela principal do app
-          console.log('Navegar para tela principal');
-        }
+    try {
+      const response = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) { // Status 200-299
+        Alert.alert('Sucesso', data.message, [
+          { text: 'OK', onPress: () => console.log('Navegar para a tela principal') }
+        ]);
+      } else { // Erros (4xx, 5xx)
+        Alert.alert('Erro de Login', data.message || 'Não foi possível fazer login.');
       }
-    ]);
+    } catch (error) {
+      console.error('Erro de rede:', error);
+      Alert.alert('Erro', 'Não foi possível conectar ao servidor. Verifique sua conexão e o endereço da API.');
+    }
   };
 
   const handleForgotPassword = () => {
