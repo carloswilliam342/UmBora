@@ -30,7 +30,7 @@ const LoginScreen = () => {
   };
 
   // Substitua 'SEU_IP_LOCAL' pelo IP da sua máquina na rede
-  const API_URL = 'http://10.0.0.111:3000/api';
+  const API_URL = 'http://192.168.1.10:3000/api';
 
   const handleLogin = async () => {
     // Validação básica

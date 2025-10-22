@@ -6,5 +6,5 @@ export const pool  = new Pool({
     host: 'localhost',
     database: 'umbora_db',
     password: '280304',
-    port: 5432,
+    port: 5433,
 });
