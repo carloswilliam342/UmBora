@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import {
   Container,
   GradientContainer,
@@ -13,15 +15,16 @@ import {
   SecondaryButton,
   colors
 } from '../components/StyledComponents';
-import { Ionicons } from '@expo/vector-icons';
 
 const LoginScreen = () => {
   const navigation = useNavigation();
+  const [ loading, setLoading] = useState(false)
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-
+  
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -30,7 +33,7 @@ const LoginScreen = () => {
   };
 
   // Substitua 'SEU_IP_LOCAL' pelo IP da sua máquina na rede
-  const API_URL = 'http://10.0.0.111:3000/api';
+  const API_URL = 'http://192.168.1.105:3000/api';
 
   const handleLogin = async () => {
     // Validação básica
@@ -38,14 +41,14 @@ const LoginScreen = () => {
       Alert.alert('Erro', 'Por favor, preencha todos os campos');
       return;
     }
-
+    setLoading(true)
     try {
       const response = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type' : 'application/json',
         },
-        body: JSON.stringify({
+        body: JSON.stringify({ 
           email: formData.email,
           password: formData.password,
         }),
@@ -53,16 +56,25 @@ const LoginScreen = () => {
 
       const data = await response.json();
 
-      if (response.ok) { // Status 200-299
+      if (response.ok) {
         Alert.alert('Sucesso', data.message, [
-          { text: 'OK', onPress: () => console.log('Navegar para a tela principal') }
-        ]);
+          {
+            text: 'OK',
+            onPress: () => {
+              setFormData({ email: '', password: '' });
+              navigation.navigate('Home');
+            }
+          }
+        ])
       } else { // Erros (4xx, 5xx)
         Alert.alert('Erro de Login', data.message || 'Não foi possível fazer login.');
       }
     } catch (error) {
       console.error('Erro de rede:', error);
       Alert.alert('Erro', 'Não foi possível conectar ao servidor. Verifique sua conexão e o endereço da API.');
+    }
+    finally{
+      setLoading(false)
     }
   };
 
@@ -100,8 +112,8 @@ const LoginScreen = () => {
             autoCapitalize="none"
           />
 
-          <PrimaryButton onPress={handleLogin}>
-            <ButtonText>Entrar</ButtonText>
+          <PrimaryButton onPress={handleLogin} disabled={loading} style={{opacity: loading ? 0.5 : 1}}>
+            {loading ? <ActivityIndicator size="small" color={colors.white} /> : <ButtonText>Entrar</ButtonText>}
           </PrimaryButton>
 
           <SecondaryButton onPress={handleFacebookLogin}>
