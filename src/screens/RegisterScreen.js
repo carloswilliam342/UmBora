@@ -33,20 +33,32 @@ const RegisterScreen = () => {
   };
 
   // Substitua 'SEU_IP_LOCAL' pelo IP da sua máquina na rede
-  const API_URL = 'http://10.0.0.111:3000/api';
+  const API_URL = 'http://192.168.1.105:3000/api';
 
   const handleRegister = async () => {
-    // Validação básica
+
+  // Validações de registro
     if (!formData.name || !formData.email || !formData.phone || !formData.password) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos');
       return;
     }
+    //Valida o formato do email com o @
+    const validateEmail = (email) => {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{3,}$/; //só pode terminar com 3+ caracteres no fim do email. Ex.: email.com
+       return emailRegex.test(email);
+    };
 
+    if (!validateEmail(formData.email)) {
+      Alert.alert('Erro', 'E-mail inválido');
+      return;
+    }
+
+    //Valida a senha e confirmação
     if (formData.password !== formData.confirmPassword) {
       Alert.alert('Erro', 'As senhas não coincidem');
       return;
     }
-
+    //Valida o tamanho da senha
     if (formData.password.length < 6) {
       Alert.alert('Erro', 'A senha deve ter pelo menos 6 caracteres');
       return;
@@ -68,13 +80,24 @@ const RegisterScreen = () => {
 
       const data = await response.json();
 
-      if (response.ok) { // Status 201
+      if (response.ok) {
         Alert.alert('Sucesso!', data.message, [
           { text: 'Fazer Login', onPress: () => navigation.navigate('Login') }
         ]);
+        
+        // Limpar o formulário pós confirmação
+        setFormData({
+          name : '',
+          email : '',
+          phone : '',
+          password : '',
+          confirmPassword : ''
+        });
+
       } else { // Erros (4xx, 5xx)
         Alert.alert('Erro no Cadastro', data.message || 'Não foi possível criar a conta.');
       }
+
     } catch (error) {
       console.error('Erro de rede:', error);
       Alert.alert('Erro', 'Não foi possível conectar ao servidor. Verifique sua conexão e o endereço da API.');

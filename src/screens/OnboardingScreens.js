@@ -66,7 +66,7 @@ const OnboardingScreens = () => {
       onSkip={handleOnboardingDone}
       showNext={true}
       showSkip={true}
-      skipLabel="Pular"
+      skipLabel ="Pular"
       nextLabel="Próximo"
       doneLabel="Começar Agora"
       titleStyles={{
@@ -74,7 +74,7 @@ const OnboardingScreens = () => {
         fontWeight: 'bold',
         color: colors.white,
         textAlign: 'center',
-        marginBottom: 10,
+        marginBottom: 1,
       }}
       subTitleStyles={{
         fontSize: 16,

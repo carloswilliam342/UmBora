@@ -10,6 +10,8 @@ import AuthScreens from './src/screens/AuthScreens';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import PhoneVerificationScreen from './src/screens/PhoneVerificationScreen';
+import HomeScreen from './src/screens/HomeScreen.js';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -31,11 +33,12 @@ export default function App() {
     <NavigationContainer>
       <StatusBar style="auto" />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Onboarding" component={OnboardingScreens} />
-        <Stack.Screen name="Auth" component={AuthScreens} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="PhoneVerification" component={PhoneVerificationScreen} />
-         <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name = "Onboarding" component={OnboardingScreens} />
+        <Stack.Screen name = "Auth" component={AuthScreens} />
+        <Stack.Screen name = "Register" component={RegisterScreen} />
+        <Stack.Screen name = "PhoneVerification" component={PhoneVerificationScreen} />
+        <Stack.Screen name = "Login" component={LoginScreen} />
+        <Stack.Screen name = "Home" component={HomeScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

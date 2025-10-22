@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Alert } from 'react-native';
+import { Alert,  ActivityIndicator} from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   Container,
@@ -29,6 +29,7 @@ const PhoneVerificationScreen = () => {
   const [code, setCode] = useState(['', '', '', '']);
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const countdown = setInterval(() => {
@@ -71,7 +72,7 @@ const PhoneVerificationScreen = () => {
     setCode(newCode);
   };
 
-  const handleVerify = (codeToVerify = code) => {
+  const handleVerify = async (codeToVerify = code) => {
     const verificationCode = codeToVerify.join('');
 
     if (verificationCode.length !== 4) {
@@ -79,23 +80,29 @@ const PhoneVerificationScreen = () => {
       return;
     }
 
-    // Simular verificação (substitua pela lógica real)
-    if (verificationCode === '1234') {
-      Alert.alert('Sucesso', 'Telefone verificado com sucesso!', [
-        {
+    setLoading(true)
+
+    try{ 
+      await new Promise(resolve => setTimeout(resolve, 1000)) //simulará o delay da verificação
+
+      if (verificationCode === '1234') {
+      Alert.alert('Sucesso', 'Telefone verificado com sucesso!', [{
           text: 'OK',
           onPress: () => {
             // Navegar para tela principal ou completar cadastro
-            console.log('Cadastro completo:', userData);
-          }
-        }
-      ]);
+            setCode(['', '', '', ''])
+            navigation.navigate('home')
+            console.log('Cadastro completo:', userData);}
+        }])
+      
     } else {
       Alert.alert('Erro', 'Código inválido. Tente novamente.');
       setCode(['', '', '', '']);
+      }
+    } finally {
+      setLoading(false)
     }
-  };
-
+  }
   const handleResendCode = () => {
     if (canResend) {
       setTimer(60);
@@ -165,9 +172,14 @@ const PhoneVerificationScreen = () => {
             ))}
           </CodeContainer>
 
-          <PrimaryButton onPress={() => handleVerify()}>
-            <ButtonText>Verificar Agora</ButtonText>
+          <PrimaryButton
+            onPress={() => handleVerify()}
+            disabled={code.some(d => d === '') || loading}
+            style={{ opacity: code.some(d => d === '') || loading ? 0.5 : 1 }}
+          >
+            {loading ? <ActivityIndicator size="small" color={colors.white} /> : <ButtonText>Verificar Agora</ButtonText>}
           </PrimaryButton>
+
 
           <Text align="center" color={colors.textSecondary}>
             {canResend ? (
@@ -183,7 +195,7 @@ const PhoneVerificationScreen = () => {
 
       {renderKeyboard()}
     </Container>
-  );
-};
+  )
+}
 
 export default PhoneVerificationScreen;
