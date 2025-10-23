@@ -102,6 +102,3 @@ npx expo start
 
 Isso abrirá o Metro Bundler no seu navegador. Escaneie o QR Code exibido usando o aplicativo **Expo Go** no seu celular para abrir o UmBora.
 
----
-
-Feito com ❤️ para a comunidade de desenvolvedores.
