@@ -89,6 +89,55 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+app.post('/api/driver', async (req, res) => {
+ 
+  const { userId, nome, cpf, cnh, veiculo } = req.body;
+  const { modelo, placa, cor } = veiculo;
+
+  if (!userId || !cnh || !modelo || !placa || !cor) {
+    return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    // Inicia uma transação
+    await client.query('BEGIN');
+
+    const driverInsertResult = await client.query(
+      'INSERT INTO drivers (user_id, cnh) VALUES ($1, $2) RETURNING id',
+      [userId, cnh]
+    );
+    const newDriverId = driverInsertResult.rows[0].id;
+
+    // 2. Insere na tabela 'vehicles' usando o ID do motorista recém-criado
+    await client.query(
+      'INSERT INTO vehicles (driver_id, modelo, placa, cor) VALUES ($1, $2, $3, $4)',
+      [newDriverId, modelo, placa, cor]
+    );
+
+    // Confirma a transação
+    await client.query('COMMIT');
+
+    res.status(201).json({ message: 'Cadastro de motorista enviado para análise com sucesso!' });
+
+  } catch (err) {
+    // Se der algum erro, desfaz a transação
+    await client.query('ROLLBACK');
+
+    if (err.code === '23505') { // Código de erro para violação de constraint UNIQUE
+      return res.status(409).json({ message: 'CPF, CNH ou Placa já cadastrados no sistema.' });
+    }
+
+    console.error('Erro no cadastro de motorista:', err);
+    res.status(500).json({ message: 'Erro interno do servidor ao processar o cadastro.' });
+  } finally {
+    // Libera o cliente de volta para o pool
+    client.release();
+  }
+});
+
+
 app.listen(3000, () => {
   console.log('Servidor rodando na porta 3000');
 });

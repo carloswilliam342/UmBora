@@ -64,7 +64,7 @@ const LoginScreen = () => {
             text: 'OK',
             onPress: () => {
               setFormData({ email: '', password: '' });
-              navigation.navigate('Home');
+              navigation.navigate('Home', { userId: data.user.id });
             }
           }
         ])

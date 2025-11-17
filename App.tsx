@@ -11,6 +11,7 @@ import LoginScreen from './src/screens/LoginScreen.js';
 import RegisterScreen from './src/screens/RegisterScreen.js';
 import PhoneVerificationScreen from './src/screens/PhoneVerificationScreen.js';
 import HomeScreen from './src/screens/HomeScreen.js';
+import DriverRegistrationScreen from './src/screens/DriverRegistrationScreen.js';
 
 
 const Stack = createNativeStackNavigator();
@@ -39,6 +40,7 @@ export default function App() {
         <Stack.Screen name = "PhoneVerification" component={PhoneVerificationScreen} />
         <Stack.Screen name = "Login" component={LoginScreen} />
         <Stack.Screen name = "Home" component={HomeScreen}/>
+        <Stack.Screen name = "Driver" component={DriverRegistrationScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );
