@@ -23,6 +23,14 @@ const HomeScreen = () => {
             color={colors.secondary}
           />
         </View>
+
+        <View style={{ marginHorizontal: 20, marginTop: 30}}>
+          <Button 
+          title='Quero ser passageiro'
+          onPress={() => navigation.navigate('Passenger', {userId: userId})}
+          color={colors.secondary}/>
+
+        </View>
       </GradientContainer>
     </Container>
   );
