@@ -164,6 +164,7 @@ const DriverRegistrationScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
+    marginTop: 30,
     flex: 1,
     backgroundColor: colors.white || '#fff',
   },

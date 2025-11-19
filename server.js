@@ -88,38 +88,55 @@ app.post('/login', async (req, res) => {
   }
 });
 
-app.post('/driver', async (req, res) => {
-  // Extrai os dados que vêm do aplicativo
-  const { userId, cpf, cnh, veiculo } = req.body;
-  const { modelo, placa, cor } = veiculo; // Desestrutura o objeto veículo
+app.post('/api/driver', async (req, res) => {
+ 
+  const { userId, nome, cpf, cnh, veiculo } = req.body;
+  const { modelo, placa, cor } = veiculo;
 
-  // Validação básica
-  if (!userId || !cpf || !cnh || !modelo || !placa || !cor) {
+  if (!userId || !cnh || !modelo || !placa || !cor) {
     return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
   }
 
+  const client = await pool.connect();
+
   try {
-    // Tenta inserir tudo na tabela 'drivers' de uma vez só
-    await pool.query(
-      `INSERT INTO drivers 
-       (user_id, cpf, cnh, veiculo_modelo, veiculo_placa, veiculo_cor, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, 'analise')`,
-      [userId, cpf, cnh, modelo, placa, cor]
+    // Inicia uma transação
+    await client.query('BEGIN');
+
+    const driverInsertResult = await client.query(
+      'INSERT INTO drivers (user_id, cnh) VALUES ($1, $2) RETURNING id',
+      [userId, cnh]
     );
+    const newDriverId = driverInsertResult.rows[0].id;
+
+    // 2. Insere na tabela 'vehicles' usando o ID do motorista recém-criado
+    await client.query(
+      'INSERT INTO vehicles (driver_id, modelo, placa, cor) VALUES ($1, $2, $3, $4)',
+      [newDriverId, modelo, placa, cor]
+    );
+
+    // Confirma a transação
+    await client.query('COMMIT');
 
     res.status(201).json({ message: 'Cadastro de motorista enviado para análise com sucesso!' });
 
   } catch (err) {
-    if (err.code === '23505') { // Erro de duplicidade (Unique violation)
-      return res.status(409).json({ message: 'CPF, CNH ou Placa já cadastrados.' });
+    // Se der algum erro, desfaz a transação
+    await client.query('ROLLBACK');
+
+    if (err.code === '23505') { // Código de erro para violação de constraint UNIQUE
+      return res.status(409).json({ message: 'CPF, CNH ou Placa já cadastrados no sistema.' });
     }
 
     console.error('Erro no cadastro de motorista:', err);
-    res.status(500).json({ message: 'Erro interno do servidor.' });
+    res.status(500).json({ message: 'Erro interno do servidor ao processar o cadastro.' });
+  } finally {
+    // Libera o cliente de volta para o pool
+    client.release();
   }
 });
 
-app.post('/passenger', async (req, res) => {
+app.post('/api/passenger', async (req, res) => {
   // 1. Recebendo todos os dados do corpo da requisição
   const { userId, cpf, cep, rua, bairro, numero } = req.body;
 
