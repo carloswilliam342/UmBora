@@ -4,18 +4,19 @@ import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// import cors from 'cors';
-// import helmet from 'helmet';
+import cors from 'cors';
+import helmet from 'helmet';
 
 const app = express();
 const saltRounds = 10;
+const porta = process.env.PORT || 3000;
 
 
-// app.use(cors());
-// app.use(helmet());
+app.use(cors());
+app.use(helmet());
 app.use(express.json());
 
-app.get('/api/test', async (req, res) => {
+app.get('/test', async (req, res) => {
   try {
     const result = await pool.query('SELECT NOW()');
     res.json(result.rows);
@@ -25,16 +26,14 @@ app.get('/api/test', async (req, res) => {
   }
 });
 
-app.post('/api/register', async (req, res) => {
+app.post('/register', async (req, res) => {
   const { name, email, phone, password } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({ message: 'Nome, e-mail e senha são obrigatórios.' });
   }
-
   try {
     const passwordHash = await bcrypt.hash(password, saltRounds);
-
     const newUser = await pool.query(
       'INSERT INTO users (name, email, phone, password_hash) VALUES ($1, $2, $3, $4) RETURNING id, name, email',
       [name, email, phone, passwordHash]
@@ -53,7 +52,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-app.post('/api/login', async (req, res) => {
+app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -137,7 +136,34 @@ app.post('/api/driver', async (req, res) => {
   }
 });
 
+app.post('/api/passenger', async (req, res) => {
+  // 1. Recebendo todos os dados do corpo da requisição
+  const { userId, cpf, cep, rua, bairro, numero } = req.body;
 
-app.listen(3000, () => {
-  console.log('Servidor rodando na porta 3000');
+  if (!userId || !cpf) {
+    return res.status(400).json({ message: 'ID do usuário e CPF são obrigatórios.' });
+  }
+
+  try {
+    // 2. Atualizamos o INSERT para incluir os campos de endereço
+    await pool.query(
+      `INSERT INTO passengers 
+       (user_id, cpf, cep, endereco_rua, endereco_bairro, endereco_numero) 
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [userId, cpf, cep, rua, bairro, numero]
+    );
+
+    res.status(201).json({ message: 'Passageiro cadastrado com sucesso!' });
+
+  } catch (err) {
+    if (err.code === '23505') { 
+      return res.status(409).json({ message: 'CPF ou Usuário já cadastrados.' });
+    }
+    console.error('Erro no cadastro de passageiro:', err);
+    res.status(500).json({ message: 'Erro interno do servidor.' });
+  }
+});
+
+app.listen(porta, () => {
+  console.log(`Servidor rodando na porta ${porta}`);
 });
