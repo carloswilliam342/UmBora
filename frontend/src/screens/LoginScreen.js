@@ -3,6 +3,7 @@ import { Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { API_URL } from '../config';
 import {
   Container,
   GradientContainer,
@@ -32,9 +33,7 @@ const LoginScreen = () => {
     }));
   };
 
-  // Substitua 'SEU_IP_LOCAL' pelo IP da sua máquina na rede
-
-  const API_URL = process.env.EXPO_PUBLIC_API_URL;
+  // API URL centralizada
 
 
   const handleLogin = async () => {

@@ -8,7 +8,7 @@ export const pool  = new Pool({
     host: process.env.DB_HOST,
     database: process.env.DB_NAME,
     password: String(process.env.DB_PASS),
-    port: Number(process.env.DB_PORT, 10),
+    port: parseInt(process.env.DB_PORT, 10),
 });
 
 pool.connect()

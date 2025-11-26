@@ -12,7 +12,7 @@ import RegisterScreen from './src/screens/RegisterScreen.js';
 import PhoneVerificationScreen from './src/screens/PhoneVerificationScreen.js';
 import HomeScreen from './src/screens/HomeScreen.js';
 import DriverRegistrationScreen from './src/screens/DriverRegistrationScreen.js';
-import RegistroPassageiro from './src/screens/PassengerRegistrationScreen,.js';
+import RegistroPassageiro from './src/screens/PassengerRegistrationScreen.js';
 import PassengerHomeScreen from './src/screens/PassengerHomeScreen.js';
 
 
