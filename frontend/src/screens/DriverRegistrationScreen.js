@@ -9,6 +9,18 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
+  const coresDisponiveis = [
+    'Branco',
+    'Preto',
+    'Prata',
+    'Cinza',
+    'Azul',
+    'Vermelho',
+    'Verde',
+    'Amarelo',
+    'Outro',
+  ];
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors } from '../components/StyledComponents'; // Reutilizando as cores do projeto
 import { API_URL } from '../config';
@@ -20,6 +32,7 @@ const DriverRegistrationScreen = () => {
   const [loading, setLoading] = useState(false);
 
   // Estado para os dados pessoais
+
   const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
@@ -27,13 +40,59 @@ const DriverRegistrationScreen = () => {
     modeloVeiculo: '',
     placaVeiculo: '',
     corVeiculo: '',
-  })
+  });
+
+  const [errors, setErrors] = useState({
+    cpf: '',
+    cnh: '',
+    placaVeiculo: '',
+  });
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+
+    // Validações em tempo real
+    if (field === 'cpf') {
+      setErrors(prev => ({ ...prev, cpf: validarCPF(value) ? '' : 'CPF inválido' }));
+    } else if (field === 'cnh') {
+      setErrors(prev => ({ ...prev, cnh: validarCNH(value) ? '' : 'CNH inválida (deve ter 11 dígitos)' }));
+    } else if (field === 'placaVeiculo') {
+      setErrors(prev => ({ ...prev, placaVeiculo: validarPlaca(value) ? '' : 'Placa inválida (ex: ABC-1234)' }));
+    }
+  };
+
+  // Validação de CPF (algoritmo brasileiro)
+  const validarCPF = (cpf) => {
+    cpf = cpf.replace(/\D/g, '');
+      if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+    let soma = 0;
+    for (let i = 0; i < 9; i++) {
+      soma += parseInt(cpf.charAt(i)) * (10 - i);
+    }
+    let resto = soma % 11;
+    let digito1 = resto < 2 ? 0 : 11 - resto;
+    if (digito1 !== parseInt(cpf.charAt(9))) return false;
+    soma = 0;
+    for (let i = 0; i < 10; i++) {
+      soma += parseInt(cpf.charAt(i)) * (11 - i);
+    }
+    resto = soma % 11;
+    let digito2 = resto < 2 ? 0 : 11 - resto;
+    return digito2 === parseInt(cpf.charAt(10));
+  };
+
+  // Validação de CNH (11 dígitos numéricos)
+  const validarCNH = (cnh) => {
+    cnh = cnh.replace(/\D/g, '');
+    return cnh.length === 11;
+  };
+
+  // Validação de placa (padrão brasileiro)
+  const validarPlaca = (placa) => {
+    return /^[A-Z]{3}-?\d{4}$/.test(placa.toUpperCase());
   };
 
   // A URL da API é carregada a partir das variáveis de ambiente (via config)
@@ -43,6 +102,18 @@ const DriverRegistrationScreen = () => {
     // Validação simples para verificar se os campos não estão vazios
     if (!nome || !cpf || !cnh || !modeloVeiculo || !placaVeiculo || !corVeiculo ) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos.');
+      return;
+    }
+    if (!validarCPF(cpf)) {
+      Alert.alert('Erro', 'CPF inválido.');
+      return;
+    }
+    if (!validarCNH(cnh)) {
+      Alert.alert('Erro', 'CNH inválida.');
+      return;
+    }
+    if (!validarPlaca(placaVeiculo)) {
+      Alert.alert('Erro', 'Placa do veículo inválida.');
       return;
     }
     
@@ -119,6 +190,7 @@ const DriverRegistrationScreen = () => {
         keyboardType="numeric"
         placeholderTextColor="#888"
       />
+        {errors.cpf ? <Text style={{ color: 'red', marginBottom: 10 }}>{errors.cpf}</Text> : null}
       <TextInput
         style={styles.input}
         placeholder="Número da CNH"
@@ -127,6 +199,7 @@ const DriverRegistrationScreen = () => {
         keyboardType="numeric"
         placeholderTextColor="#888"
       />
+        {errors.cnh ? <Text style={{ color: 'red', marginBottom: 10 }}>{errors.cnh}</Text> : null}
 
       <Text style={styles.sectionTitle}>Informações do Veículo</Text>
       <TextInput
@@ -144,13 +217,19 @@ const DriverRegistrationScreen = () => {
         autoCapitalize="characters"
         placeholderTextColor="#888"
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Cor do Veículo"
-        value={formData.corVeiculo}
-        onChangeText={(text) => handleInputChange('corVeiculo', text)}
-        placeholderTextColor="#888"
-      />
+        {errors.placaVeiculo ? <Text style={{ color: 'red', marginBottom: 10 }}>{errors.placaVeiculo}</Text> : null}
+      <Text style={styles.sectionTitle}>Cor do Veículo</Text>
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={formData.corVeiculo}
+          onValueChange={(itemValue) => handleInputChange('corVeiculo', itemValue)}
+        >
+          <Picker.Item label="Selecione uma cor" value="" />
+          {coresDisponiveis.map((cor) => (
+            <Picker.Item key={cor} label={cor} value={cor} />
+          ))}
+        </Picker>
+      </View>
 
       <View style={styles.buttonContainer}>
         {loading ? (
@@ -177,7 +256,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.primary,
     marginBottom: 20,
-    textAlign: 'center',
+  },
+  pickerContainer: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginBottom: 20,
+    height: 50,
+    justifyContent: 'center',
   },
   sectionTitle: {
     fontSize: 18,
