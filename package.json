@@ -1,39 +1,5 @@
 {
-  "name": "umbora-app",
-  "version": "1.0.0",
-  "main": "node_modules/expo/AppEntry.js",
-  "type": "module",
-  "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
-  },
   "dependencies": {
-    "@expo/vector-icons": "^15.0.2",
-    "@react-native-async-storage/async-storage": "^2.2.0",
-    "@react-navigation/bottom-tabs": "^6.5.11",
-    "@react-navigation/native": "^6.1.9",
-    "@react-navigation/native-stack": "^6.9.17",
-    "bcrypt": "^6.0.0",
-    "dotenv": "^17.2.3",
-    "expo": "^54.0.10",
-    "expo-splash-screen": "^31.0.10",
-    "expo-status-bar": "~3.0.8",
-    "express": "^5.1.0",
-    "pg": "^8.16.3",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "react-native": "0.81.4",
-    "react-native-onboarding-swiper": "^1.2.0",
-    "react-native-safe-area-context": "~5.6.0",
-    "react-native-screens": "~4.16.0",
-    "react-native-web": "^0.21.0",
-    "styled-components": "^6.1.1"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.20.0",
-    "@types/styled-components-react-native": "^5.2.3",
-    "typescript": "^5.9.2"
+    "cors": "^2.8.5"
   }
 }

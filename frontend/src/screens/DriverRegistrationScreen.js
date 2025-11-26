@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors } from '../components/StyledComponents'; // Reutilizando as cores do projeto
+import { API_URL } from '../config';
 
 const DriverRegistrationScreen = () => {
   const navigation = useNavigation();
@@ -35,8 +36,7 @@ const DriverRegistrationScreen = () => {
     }));
   };
 
-  // A URL da API é carregada a partir das variáveis de ambiente
-  const API_URL = process.env.EXPO_PUBLIC_API_URL;
+  // A URL da API é carregada a partir das variáveis de ambiente (via config)
 
   const handleRegister = async () => {
     const { nome, cpf, cnh, modeloVeiculo, placaVeiculo, corVeiculo } = formData;
@@ -48,8 +48,9 @@ const DriverRegistrationScreen = () => {
     
     setLoading(true);
     try {
+        console.log('DriverRegistration -> API_URL =', API_URL);
       // TODO: Ajuste o endpoint '/driver' conforme a sua API no backend
-      const response = await fetch(`${API_URL}/driver`, {
+        const response = await fetch(`${API_URL}/api/driver`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

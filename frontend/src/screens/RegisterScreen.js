@@ -14,6 +14,7 @@ import {
   colors
 } from '../components/StyledComponents';
 import { Ionicons } from '@expo/vector-icons';
+import { API_URL } from '../config';
 
 const RegisterScreen = () => {
   const navigation = useNavigation();
@@ -32,8 +33,7 @@ const RegisterScreen = () => {
     }));
   };
 
-  // A URL da API é carregada a partir das variáveis de ambiente
-  const API_URL = process.env.EXPO_PUBLIC_API_URL;
+  // A URL da API é carregada a partir das variáveis de ambiente (via config)
 
 
   const handleRegister = async () => {
