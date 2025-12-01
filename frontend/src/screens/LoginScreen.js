@@ -62,11 +62,13 @@ const LoginScreen = () => {
           {
             text: 'OK',
             onPress: () => {
+              // Após o login, limpa o formulário e navega para a tela principal.
               setFormData({ email: '', password: '' });
-              navigation.navigate('Home', { userId: data.user.id });
+              navigation.navigate('Main', { userId: data.user.id });
             }
           }
         ])
+        
       } else { // Erros (4xx, 5xx)
         Alert.alert('Erro de Login', data.message || 'Não foi possível fazer login.');
       }

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
+import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
+// 1. Importar o createBottomTabNavigator
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import SplashScreen from './src/screens/SplashScreen.js';
 import OnboardingScreens from './src/screens/OnboardingScreens.js';
@@ -14,9 +15,49 @@ import HomeScreen from './src/screens/HomeScreen.js';
 import DriverRegistrationScreen from './src/screens/DriverRegistrationScreen.js';
 import RegistroPassageiro from './src/screens/PassengerRegistrationScreen.js';
 import PassengerHomeScreen from './src/screens/PassengerHomeScreen.js';
+import SettingsScreen from './src/screens/SettingsScreen.js';
 
+// A. Definir os tipos de parâmetros para cada rota do Stack Navigator
+type RootStackParamList = {
+  Onboarding: undefined;
+  Auth: undefined;
+  Register: undefined;
+  PhoneVerification: undefined;
+  Login: undefined;
+  Main: { userId: number };
+  DriverSignUpFlow: { userId: number };
+  Passenger: { userId: number };
+  PassengerHome: { userId: number };
+};
 
-const Stack = createNativeStackNavigator();
+// 2. Criar os dois tipos de navegador
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator();
+
+// B. Definir o tipo das props para o componente MainAppTabs
+type MainAppTabsProps = NativeStackScreenProps<RootStackParamList, 'Main'>;
+
+// 3. Criar um componente para a navegação principal (pós-login)
+function MainAppTabs({ route }: MainAppTabsProps) {
+  // Pega o userId passado para o MainAppTabs
+  const { userId } = route.params;
+
+  return (
+    <Tab.Navigator screenOptions={{ headerShown: false }}>
+      <Tab.Screen 
+        name="Home" 
+        component={HomeScreen} 
+        initialParams={{ userId: userId }} // Passa o userId para a HomeScreen
+      />
+      <Tab.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        initialParams={{ userId: userId }} // Passa o userId para a SettingsScreen
+        options={{ headerShown: true, title: 'Configurações' }} 
+      />
+    </Tab.Navigator>
+  );
+}
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -41,10 +82,10 @@ export default function App() {
         <Stack.Screen name = "Register" component={RegisterScreen} />
         <Stack.Screen name = "PhoneVerification" component={PhoneVerificationScreen} />
         <Stack.Screen name = "Login" component={LoginScreen} />
-        <Stack.Screen name = "Home" component={HomeScreen}/>
-        <Stack.Screen name = "Driver" component={DriverRegistrationScreen}/>
+        {/* 4. A rota "Main" agora carrega a navegação por abas */}
+        <Stack.Screen name="Main" component={MainAppTabs} />
+        <Stack.Screen name="DriverSignUpFlow" component={DriverRegistrationScreen} options={{ headerShown: true, title: 'Seja um Motorista' }} />
         <Stack.Screen name = "Passenger" component={RegistroPassageiro}/>
-
         <Stack.Screen name="PassengerHome" component={PassengerHomeScreen} options={{ headerShown: false }}/>
       </Stack.Navigator>
     </NavigationContainer>

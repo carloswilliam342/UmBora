@@ -1,12 +1,22 @@
 import React from 'react';
-import { Button, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Container, GradientContainer, MainTitle, Text, colors } from '../components/StyledComponents';
+import { 
+  Container, 
+  GradientContainer, 
+  MainTitle, 
+  Text, 
+  PrimaryButton, 
+  ButtonText 
+} from '../components/StyledComponents';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { userId } = route.params || {};
+
+  const handleSearchRide = () => {
+    navigation.navigate('PassengerHome', { userId: userId });
+  };
 
   return (
     <Container>
@@ -16,21 +26,9 @@ const HomeScreen = () => {
           Você está logado e esta é a tela principal do app.
         </Text>
 
-        <View style={{ marginHorizontal: 20, marginTop: 30 }}>
-          <Button
-            title="Quero ser Motorista"
-            onPress={() => navigation.navigate('Driver', { userId: userId })}
-            color={colors.secondary}
-          />
-        </View>
-
-        <View style={{ marginHorizontal: 20, marginTop: 30}}>
-          <Button 
-          title='Quero ser passageiro'
-          onPress={() => navigation.navigate('Passenger', {userId: userId})}
-          color={colors.secondary}/>
-
-        </View>
+        <PrimaryButton onPress={handleSearchRide} style={{ marginHorizontal: 20, marginTop: 20 }}>
+          <ButtonText>Buscar Corrida</ButtonText>
+        </PrimaryButton>
       </GradientContainer>
     </Container>
   );

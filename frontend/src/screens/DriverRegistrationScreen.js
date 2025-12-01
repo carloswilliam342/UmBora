@@ -23,7 +23,8 @@ import { Picker } from '@react-native-picker/picker';
   ];
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors } from '../components/StyledComponents'; // Reutilizando as cores do projeto
-import { API_URL } from '../config';
+// 1. Importar a nova função em vez da API_URL diretamente
+import { applyToBeDriver } from '../services/api';
 
 const DriverRegistrationScreen = () => {
   const navigation = useNavigation();
@@ -37,9 +38,9 @@ const DriverRegistrationScreen = () => {
     nome: '',
     cpf: '',
     cnh: '',
-    modeloVeiculo: '',
-    placaVeiculo: '',
-    corVeiculo: '',
+    modelo: '', // Renomeado para corresponder à API
+    placa: '',  // Renomeado para corresponder à API
+    cor: '',    // Renomeado para corresponder à API
   });
 
   const [errors, setErrors] = useState({
@@ -59,7 +60,7 @@ const DriverRegistrationScreen = () => {
       setErrors(prev => ({ ...prev, cpf: validarCPF(value) ? '' : 'CPF inválido' }));
     } else if (field === 'cnh') {
       setErrors(prev => ({ ...prev, cnh: validarCNH(value) ? '' : 'CNH inválida (deve ter 11 dígitos)' }));
-    } else if (field === 'placaVeiculo') {
+    } else if (field === 'placa') {
       setErrors(prev => ({ ...prev, placaVeiculo: validarPlaca(value) ? '' : 'Placa inválida (ex: ABC-1234)' }));
     }
   };
@@ -95,12 +96,12 @@ const DriverRegistrationScreen = () => {
     return /^[A-Z]{3}-?\d{4}$/.test(placa.toUpperCase());
   };
 
-  // A URL da API é carregada a partir das variáveis de ambiente (via config)
+  // A lógica de chamada da API agora está centralizada no services/api.js
 
   const handleRegister = async () => {
-    const { nome, cpf, cnh, modeloVeiculo, placaVeiculo, corVeiculo } = formData;
+    const { nome, cpf, cnh, modelo, placa, cor } = formData;
     // Validação simples para verificar se os campos não estão vazios
-    if (!nome || !cpf || !cnh || !modeloVeiculo || !placaVeiculo || !corVeiculo ) {
+    if (!nome || !cpf || !cnh || !modelo || !placa || !cor ) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos.');
       return;
     }
@@ -112,36 +113,22 @@ const DriverRegistrationScreen = () => {
       Alert.alert('Erro', 'CNH inválida.');
       return;
     }
-    if (!validarPlaca(placaVeiculo)) {
+    if (!validarPlaca(placa)) {
       Alert.alert('Erro', 'Placa do veículo inválida.');
       return;
     }
     
     setLoading(true);
     try {
-        console.log('DriverRegistration -> API_URL =', API_URL);
-      // TODO: Ajuste o endpoint '/driver' conforme a sua API no backend
-        const response = await fetch(`${API_URL}/api/driver`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: userId, // Envia o userId para o backend
-          nome: formData.nome,
-          cpf: formData.cpf,
-          cnh: formData.cnh,
-          veiculo: {
-              modelo: formData.modeloVeiculo,
-              placa: formData.placaVeiculo,
-              cor: formData.corVeiculo,
-          },
-        }),
-      });
+        // 2. Chamar a nova função do serviço de API
+        await applyToBeDriver({
+            userId: userId,
+            cnh: formData.cnh,
+            modelo: formData.modelo,
+            placa: formData.placa,
+            cor: formData.cor,
+        });
 
-      const data = await response.json();
-
-      if (response.ok) {
         Alert.alert(
           'Sucesso!',
           'Seu cadastro foi enviado para análise.',
@@ -149,18 +136,16 @@ const DriverRegistrationScreen = () => {
             {
               text: 'OK',
               onPress: () => {
-               setFormData({nome: '', cpf: '', cnh: '', modeloVeiculo: '', placaVeiculo: '', corVeiculo: ''})
-                navigation.goBack();
+               setFormData({nome: '', cpf: '', cnh: '', modelo: '', placa: '', cor: ''})
+                // O 'reset' limpa a pilha de navegação, impedindo o usuário de voltar para a tela de cadastro.
+                navigation.reset({ index: 0, routes: [{ name: 'Main', params: { userId: userId } }] });
               },
             },
           ]
-        );
-      } else {
-        Alert.alert('Erro ao cadastrar', data.message || 'Não foi possível concluir o cadastro.');
-      }
+        ); 
     } catch (error) {
-      console.error('Erro de rede:', error);
-      Alert.alert('Erro', 'Não foi possível conectar ao servidor. Verifique sua conexão e o endereço da API.');
+      // O erro já vem formatado do nosso serviço de API
+      Alert.alert('Erro ao cadastrar', error.message);
     }
     finally{
         setLoading(false)
@@ -205,15 +190,15 @@ const DriverRegistrationScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Modelo do Veículo (ex: Fiat Uno)"
-        value={formData.modeloVeiculo}
-        onChangeText={(text) => handleInputChange('modeloVeiculo', text)}
+        value={formData.modelo}
+        onChangeText={(text) => handleInputChange('modelo', text)}
         placeholderTextColor="#888"
       />
       <TextInput
         style={styles.input}
         placeholder="Placa do Veículo (ex: ABC-1234)"
-        value={formData.placaVeiculo}
-        onChangeText={(text) => handleInputChange('placaVeiculo', text)}
+        value={formData.placa}
+        onChangeText={(text) => handleInputChange('placa', text)}
         autoCapitalize="characters"
         placeholderTextColor="#888"
       />
@@ -221,8 +206,8 @@ const DriverRegistrationScreen = () => {
       <Text style={styles.sectionTitle}>Cor do Veículo</Text>
       <View style={styles.pickerContainer}>
         <Picker
-          selectedValue={formData.corVeiculo}
-          onValueChange={(itemValue) => handleInputChange('corVeiculo', itemValue)}
+          selectedValue={formData.cor}
+          onValueChange={(itemValue) => handleInputChange('cor', itemValue)}
         >
           <Picker.Item label="Selecione uma cor" value="" />
           {coresDisponiveis.map((cor) => (
