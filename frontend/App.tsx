@@ -68,8 +68,9 @@ function MainAppTabs({ route }: MainAppTabsProps) {
       <Tab.Screen 
         name="Settings" 
         component={SettingsScreen} 
-        initialParams={{ userId: userId }} // Passa o userId para a SettingsScreen
-        options={{ headerShown: true, title: 'Configurações' }} 
+        initialParams={{ userId: userId }} 
+    
+        options={{ headerShown: false }} 
       />
     </Tab.Navigator>
   );

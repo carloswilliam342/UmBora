@@ -114,7 +114,7 @@ const LoginScreen = () => {
             secureTextEntry
             autoCapitalize="none"
           />
-
+          
           <PrimaryButton onPress={handleLogin} disabled={loading} style={{opacity: loading ? 0.5 : 1}}>
             {loading ? <ActivityIndicator size="small" color={colors.white} /> : <ButtonText>Entrar</ButtonText>}
           </PrimaryButton>
