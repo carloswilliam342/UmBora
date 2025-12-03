@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
 // 1. Importar o createBottomTabNavigator
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import SplashScreen from './src/screens/SplashScreen.js';
 import OnboardingScreens from './src/screens/OnboardingScreens.js';
@@ -43,7 +44,22 @@ function MainAppTabs({ route }: MainAppTabsProps) {
   const { userId } = route.params;
 
   return (
-    <Tab.Navigator screenOptions={{ headerShown: false }}>
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarIcon: ({ color, size }) => {
+          let iconName;
+          if (route.name === 'Home') {
+            iconName = 'home';
+          } else if (route.name === 'Settings') {
+            iconName = 'settings';
+          }
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#43B649',
+        tabBarInactiveTintColor: 'gray',
+      })}
+    >
       <Tab.Screen 
         name="Home" 
         component={HomeScreen} 
