@@ -12,7 +12,7 @@ import driverRoutes from './routes/driverRoutes.js';
 
 const app = express();
 const saltRounds = 10;
-const porta = process.env.PORT || 3000;
+const porta = process.env.PORT || 3010;
 
 
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
@@ -22,10 +22,11 @@ app.use(express.json());
 // Diz ao Express para usar o arquivo de rotas para qualquer URL que comece com /api/drivers
 app.use('/api/drivers', driverRoutes);
 
-app.get('/test', async (req, res) => {
+app.get('/', async (req, res) => {
   try {
     const result = await pool.query('SELECT NOW()');
-    res.json(result.rows);
+    res.json({'result': result.rows, 'message': 'API online!'});
+    
   } catch (err) {
     console.error(err);
     res.status(500).send(err.message);
@@ -126,5 +127,5 @@ app.post('/api/passenger', async (req, res) => {
 });
 
 app.listen(porta, () => {
-  console.log(`Servidor rodando na porta ${porta}`);
+  console.log(`Servidor rodando na porta http://localhost:${porta}`);
 });

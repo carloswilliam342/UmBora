@@ -1,4 +1,4 @@
- {
+{
   "expo": {
     "name": "Umbora",
     "slug": "umbora-app",
@@ -21,7 +21,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#4CAF50"
-      }
+      },
+      "package": "com.anonymous.umboraapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"

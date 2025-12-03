@@ -4,18 +4,31 @@ import { Dimensions } from 'react-native';
 const { width, height } = Dimensions.get('window');
 
 // Cores do tema
+// Cores do tema (Moderno & Profissional)
 export const colors = {
-  primary: '#4CAF50',
-  secondary: '#81C784',
+  // Verdes (Identidade Visual)
+  primary: '#10B981',       // Verde Emerald (Mais vibrante e moderno que o anterior)
+  secondary: '#34D399',     // Verde claro (para ícones ou destaques menores)
+  primaryLight: '#D1FAE5',  // Fundo verde bem suave (ótimo para botões secundários)
+
+  // Neutros (Base)
   white: '#FFFFFF',
-  black: '#000000',
-  gray: '#9E9E9E',
-  lightGray: '#F5F5F5',
-  darkGray: '#424242',
-  text: '#212121',
-  textSecondary: '#757575',
-  background: '#FAFAFA',
-  error: '#F44336'
+  background: '#F9FAFB',    // Um "off-white" (quase branco) mais agradável aos olhos que o branco puro
+  
+  // Textos (Melhor Leitura)
+  black: '#111827',         // Um "preto" suave (Dark Blue/Gray) - cansa menos a vista que #000000
+  text: '#1F2937',          // Cor principal do texto
+  textSecondary: '#6B7280', // Cinza médio para legendas e placeholders
+  
+  // Estruturas
+  gray: '#9CA3AF',          // Cinza para desabilitados ou bordas
+  lightGray: '#F3F4F6',     // Fundo de inputs e áreas de separação
+  darkGray: '#374151',      // Ícones escuros
+  
+  // Status
+  error: '#EF4444',         // Vermelho alerta
+  warning: '#F59E0B',       // Amarelo aviso
+  success: '#10B981',       // Verde sucesso (igual ao primary)
 };
 
 // Container principal
