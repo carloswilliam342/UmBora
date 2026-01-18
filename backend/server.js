@@ -9,10 +9,11 @@ import helmet from 'helmet';
 
 // Importa as rotas de motorista que criamos
 import driverRoutes from './routes/driverRoutes.js';
+import rideRoutes from './routes/rideRoutes.js';
 
 const app = express();
 const saltRounds = 10;
-const porta = process.env.PORT || 3010;
+const porta = process.env.PORT || 3000;
 
 
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
@@ -21,12 +22,14 @@ app.use(express.json());
 
 // Diz ao Express para usar o arquivo de rotas para qualquer URL que comece com /api/drivers
 app.use('/api/drivers', driverRoutes);
+// Rotas para corridas (buscar motoristas próximos, etc)
+app.use('/api/rides', rideRoutes);
 
 app.get('/', async (req, res) => {
   try {
     const result = await pool.query('SELECT NOW()');
-    res.json({'result': result.rows, 'message': 'API online!'});
-    
+    res.json({ 'result': result.rows, 'message': 'API online!' });
+
   } catch (err) {
     console.error(err);
     res.status(500).send(err.message);
@@ -46,8 +49,8 @@ app.post('/register', async (req, res) => {
       [name, email, phone, passwordHash]
     );
 
-    res.status(201).json({ 
-      message: 'Usuário criado com sucesso!', 
+    res.status(201).json({
+      message: 'Usuário criado com sucesso!',
       user: newUser.rows[0] // Só retorna id, name, email
     });
   } catch (err) {
@@ -68,7 +71,7 @@ app.post('/login', async (req, res) => {
 
   try {
     const userResult = await pool.query(
-      'SELECT id, name, email, password_hash FROM users WHERE email = $1', 
+      'SELECT id, name, email, password_hash FROM users WHERE email = $1',
       [email]
     );
 
@@ -85,7 +88,7 @@ app.post('/login', async (req, res) => {
     }
 
     // Não retorna password_hash!
-    res.status(200).json({ 
+    res.status(200).json({
       message: `Bem-vindo de volta, ${user.name}!`,
       user: { id: user.id, name: user.name, email: user.email }
     });
@@ -118,7 +121,7 @@ app.post('/api/passenger', async (req, res) => {
     res.status(201).json({ message: 'Passageiro cadastrado com sucesso!' });
 
   } catch (err) {
-    if (err.code === '23505') { 
+    if (err.code === '23505') {
       return res.status(409).json({ message: 'CPF ou Usuário já cadastrados.' });
     }
     console.error('Erro no cadastro de passageiro:', err);

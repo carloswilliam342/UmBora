@@ -15,14 +15,27 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "O UmBora precisa da sua localização para encontrar motoristas próximos.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "O UmBora precisa da sua localização para encontrar motoristas próximos."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#4CAF50"
       },
-      "package": "com.anonymous.umboraapp"
+      "package": "com.anonymous.umboraapp",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "NOT_REQUIRED_FOR_OSM"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

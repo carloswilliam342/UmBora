@@ -4,7 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
 // 1. Importar o createBottomTabNavigator
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 import SplashScreen from './src/screens/SplashScreen.js';
 import OnboardingScreens from './src/screens/OnboardingScreens.js';
@@ -14,6 +14,7 @@ import RegisterScreen from './src/screens/RegisterScreen.js';
 import PhoneVerificationScreen from './src/screens/PhoneVerificationScreen.js';
 import HomeScreen from './src/screens/HomeScreen.js';
 import DriverRegistrationScreen from './src/screens/DriverRegistrationScreen.js';
+import DriverEditScreen from './src/screens/DriverEditScreen.js';
 import RegistroPassageiro from './src/screens/PassengerRegistrationScreen.js';
 import PassengerHomeScreen from './src/screens/PassengerHomeScreen.js';
 import SettingsScreen from './src/screens/SettingsScreen.js';
@@ -27,6 +28,7 @@ type RootStackParamList = {
   Login: undefined;
   Main: { userId: number };
   DriverSignUpFlow: { userId: number };
+  DriverEdit: { userId: number };  // NOVO
   Passenger: { userId: number };
   PassengerHome: { userId: number };
 };
@@ -48,11 +50,13 @@ function MainAppTabs({ route }: MainAppTabsProps) {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ color, size }) => {
-          let iconName;
+          let iconName: keyof typeof Ionicons.glyphMap;
           if (route.name === 'Home') {
             iconName = 'home';
           } else if (route.name === 'Settings') {
             iconName = 'settings';
+          } else {
+            iconName = 'home'; // fallback
           }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -60,17 +64,17 @@ function MainAppTabs({ route }: MainAppTabsProps) {
         tabBarInactiveTintColor: 'gray',
       })}
     >
-      <Tab.Screen 
-        name="Home" 
-        component={HomeScreen} 
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
         initialParams={{ userId: userId }} // Passa o userId para a HomeScreen
       />
-      <Tab.Screen 
-        name="Settings" 
-        component={SettingsScreen} 
-        initialParams={{ userId: userId }} 
-    
-        options={{ headerShown: false }} 
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        initialParams={{ userId: userId }}
+
+        options={{ headerShown: false }}
       />
     </Tab.Navigator>
   );
@@ -94,16 +98,17 @@ export default function App() {
     <NavigationContainer>
       <StatusBar style="auto" />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name = "Onboarding" component={OnboardingScreens} />
-        <Stack.Screen name = "Auth" component={AuthScreens} />
-        <Stack.Screen name = "Register" component={RegisterScreen} />
-        <Stack.Screen name = "PhoneVerification" component={PhoneVerificationScreen} />
-        <Stack.Screen name = "Login" component={LoginScreen} />
+        <Stack.Screen name="Onboarding" component={OnboardingScreens} />
+        <Stack.Screen name="Auth" component={AuthScreens} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="PhoneVerification" component={PhoneVerificationScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
         {/* 4. A rota "Main" agora carrega a navegação por abas */}
         <Stack.Screen name="Main" component={MainAppTabs} />
         <Stack.Screen name="DriverSignUpFlow" component={DriverRegistrationScreen} options={{ headerShown: true, title: 'Seja um Motorista' }} />
-        <Stack.Screen name = "Passenger" component={RegistroPassageiro}/>
-        <Stack.Screen name="PassengerHome" component={PassengerHomeScreen} options={{ headerShown: false }}/>
+        <Stack.Screen name="DriverEdit" component={DriverEditScreen} options={{ headerShown: true, title: 'Editar Cadastro' }} />
+        <Stack.Screen name="Passenger" component={RegistroPassageiro} />
+        <Stack.Screen name="PassengerHome" component={PassengerHomeScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

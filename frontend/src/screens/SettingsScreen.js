@@ -1,19 +1,47 @@
 // frontend/src/screens/SettingsScreen.js
-import React from 'react';
-import { View, Text, TouchableOpacity, StatusBar, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StatusBar, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useRoute } from '@react-navigation/native';
-import { 
-  Container, 
-  colors 
+import {
+  Container,
+  colors
 } from '../components/StyledComponents';
+import { getDriverProfile } from '../services/driverService';
 
 const SettingsScreen = ({ navigation }) => {
   const route = useRoute();
   const { userId } = route.params || {};
 
-  // Função para ir para o cadastro de motorista
+  const [isDriver, setIsDriver] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Verificar se o usuário é motorista ao carregar a tela
+  useEffect(() => {
+    checkIfDriver();
+  }, []);
+
+  const checkIfDriver = async () => {
+    try {
+      setLoading(true);
+      const profile = await getDriverProfile(userId);
+      setIsDriver(profile?.isDriver || false);
+    } catch (error) {
+      console.error('Erro ao verificar motorista:', error);
+      setIsDriver(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Função para ir para o cadastro de motorista OU edição
   const handleBecomeDriver = () => {
-    navigation.navigate('DriverSignUpFlow', { userId: userId }); 
+    if (isDriver) {
+      // Se já é motorista, vai para edição
+      navigation.navigate('DriverEdit', { userId: userId });
+    } else {
+      // Se não é motorista, vai para cadastro
+      navigation.navigate('DriverSignUpFlow', { userId: userId });
+    }
   };
 
   // Função para ir para o Perfil (Placeholder por enquanto)
@@ -34,12 +62,12 @@ const SettingsScreen = ({ navigation }) => {
 
       {/* 2. O Corpo Branco com Curva Invertida */}
       <View style={styles.whiteBodyContainer}>
-        
+
         <View style={styles.contentInterno}>
-          
+
           {/* --- Botão 1: Meu Perfil --- */}
-          <TouchableOpacity 
-            style={styles.actionButton} 
+          <TouchableOpacity
+            style={styles.actionButton}
             onPress={handleProfile} // Corrigido: Agora chama a função de perfil
             activeOpacity={0.7}
           >
@@ -49,20 +77,31 @@ const SettingsScreen = ({ navigation }) => {
             </View>
             <Text style={styles.arrowIcon}>{'>'}</Text>
           </TouchableOpacity>
-          
-          {/* --- Botão 2: Virar Motorista --- */}
-          <TouchableOpacity 
-            style={styles.actionButton} 
-            onPress={handleBecomeDriver}
-            activeOpacity={0.7}
-          >
-            <View>
-              <Text style={styles.actionButtonTitle}>Quero me tornar motorista</Text>
-              <Text style={styles.actionButtonSubtitle}>Faça uma renda extra dirigindo</Text>
+
+          {/* --- Botão 2: Virar Motorista / Editar Motorista --- */}
+          {loading ? (
+            <View style={styles.actionButton}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={styles.actionButtonSubtitle}>Carregando...</Text>
             </View>
-            <Text style={styles.arrowIcon}>{'>'}</Text>
-          </TouchableOpacity>
-          
+          ) : (
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleBecomeDriver}
+              activeOpacity={0.7}
+            >
+              <View>
+                <Text style={styles.actionButtonTitle}>
+                  {isDriver ? 'Editar meu cadastro de motorista' : 'Quero me tornar motorista'}
+                </Text>
+                <Text style={styles.actionButtonSubtitle}>
+                  {isDriver ? 'Atualize seus dados e disponibilidade' : 'Faça uma renda extra dirigindo'}
+                </Text>
+              </View>
+              <Text style={styles.arrowIcon}>{'>'}</Text>
+            </TouchableOpacity>
+          )}
+
         </View>
       </View>
     </Container>

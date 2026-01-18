@@ -8,19 +8,22 @@ import {
   Button,
   Alert,
   ActivityIndicator,
+  Switch,
+  TouchableOpacity,
 } from 'react-native';
+import * as Location from 'expo-location';
 import { Picker } from '@react-native-picker/picker';
-  const coresDisponiveis = [
-    'Branco',
-    'Preto',
-    'Prata',
-    'Cinza',
-    'Azul',
-    'Vermelho',
-    'Verde',
-    'Amarelo',
-    'Outro',
-  ];
+const coresDisponiveis = [
+  'Branco',
+  'Preto',
+  'Prata',
+  'Cinza',
+  'Azul',
+  'Vermelho',
+  'Verde',
+  'Amarelo',
+  'Outro',
+];
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors } from '../components/StyledComponents'; // Reutilizando as cores do projeto
 // 1. Importar a nova função em vez da API_URL diretamente
@@ -41,7 +44,12 @@ const DriverRegistrationScreen = () => {
     modelo: '', // Renomeado para corresponder à API
     placa: '',  // Renomeado para corresponder à API
     cor: '',    // Renomeado para corresponder à API
+    current_latitude: null,  // NOVO
+    current_longitude: null, // NOVO
+    is_available: false,     // NOVO
   });
+
+  const [loadingLocation, setLoadingLocation] = useState(false);
 
   const [errors, setErrors] = useState({
     cpf: '',
@@ -68,7 +76,7 @@ const DriverRegistrationScreen = () => {
   // Validação de CPF (algoritmo brasileiro)
   const validarCPF = (cpf) => {
     cpf = cpf.replace(/\D/g, '');
-      if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+    if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
     let soma = 0;
     for (let i = 0; i < 9; i++) {
       soma += parseInt(cpf.charAt(i)) * (10 - i);
@@ -96,12 +104,43 @@ const DriverRegistrationScreen = () => {
     return /^[A-Z]{3}-?\d{4}$/.test(placa.toUpperCase());
   };
 
+  // NOVA FUNÇÃO: Obter localização do usuário
+  const getUserLocation = async () => {
+    setLoadingLocation(true);
+    try {
+      // Solicitar permissão de localização
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissão negada', 'Precisamos da sua localização para cadastrá-lo no mapa.');
+        setLoadingLocation(false);
+        return;
+      }
+
+      // Obter localização atual
+      let location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+
+      setFormData(prev => ({
+        ...prev,
+        current_latitude: latitude,
+        current_longitude: longitude
+      }));
+
+      Alert.alert('Sucesso!', `Localização obtida:\nLat: ${latitude.toFixed(6)}\nLng: ${longitude.toFixed(6)}`);
+    } catch (error) {
+      console.error('Erro ao obter localização:', error);
+      Alert.alert('Erro', 'Não foi possível obter sua localização. Tente novamente.');
+    } finally {
+      setLoadingLocation(false);
+    }
+  };
+
   // A lógica de chamada da API agora está centralizada no services/api.js
 
   const handleRegister = async () => {
     const { nome, cpf, cnh, modelo, placa, cor } = formData;
     // Validação simples para verificar se os campos não estão vazios
-    if (!nome || !cpf || !cnh || !modelo || !placa || !cor ) {
+    if (!nome || !cpf || !cnh || !modelo || !placa || !cor) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos.');
       return;
     }
@@ -117,41 +156,44 @@ const DriverRegistrationScreen = () => {
       Alert.alert('Erro', 'Placa do veículo inválida.');
       return;
     }
-    
+
     setLoading(true);
     try {
-        // 2. Chamar a nova função do serviço de API
-        await applyToBeDriver({
-            userId: userId,
-            cnh: formData.cnh,
-            modelo: formData.modelo,
-            placa: formData.placa,
-            cor: formData.cor,
-        });
+      // 2. Chamar a nova função do serviço de API com os novos campos
+      await applyToBeDriver({
+        userId: userId,
+        cnh: formData.cnh,
+        modelo: formData.modelo,
+        placa: formData.placa,
+        cor: formData.cor,
+        current_latitude: formData.current_latitude,    // NOVO
+        current_longitude: formData.current_longitude,  // NOVO
+        is_available: formData.is_available,            // NOVO
+      });
 
-        Alert.alert(
-          'Sucesso!',
-          'Seu cadastro foi enviado para análise.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-               setFormData({nome: '', cpf: '', cnh: '', modelo: '', placa: '', cor: ''})
-                // O 'reset' limpa a pilha de navegação, impedindo o usuário de voltar para a tela de cadastro.
-                navigation.reset({ index: 0, routes: [{ name: 'Main', params: { userId: userId } }] });
-              },
+      Alert.alert(
+        'Sucesso!',
+        'Seu cadastro foi enviado para análise.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setFormData({ nome: '', cpf: '', cnh: '', modelo: '', placa: '', cor: '' })
+              // O 'reset' limpa a pilha de navegação, impedindo o usuário de voltar para a tela de cadastro.
+              navigation.reset({ index: 0, routes: [{ name: 'Main', params: { userId: userId } }] });
             },
-          ]
-        ); 
+          },
+        ]
+      );
     } catch (error) {
       // O erro já vem formatado do nosso serviço de API
       Alert.alert('Erro ao cadastrar', error.message);
     }
-    finally{
-        setLoading(false)
+    finally {
+      setLoading(false)
     }
 
-    
+
 
   };
 
@@ -175,7 +217,7 @@ const DriverRegistrationScreen = () => {
         keyboardType="numeric"
         placeholderTextColor="#888"
       />
-        {errors.cpf ? <Text style={{ color: 'red', marginBottom: 10 }}>{errors.cpf}</Text> : null}
+      {errors.cpf ? <Text style={{ color: 'red', marginBottom: 10 }}>{errors.cpf}</Text> : null}
       <TextInput
         style={styles.input}
         placeholder="Número da CNH"
@@ -184,7 +226,7 @@ const DriverRegistrationScreen = () => {
         keyboardType="numeric"
         placeholderTextColor="#888"
       />
-        {errors.cnh ? <Text style={{ color: 'red', marginBottom: 10 }}>{errors.cnh}</Text> : null}
+      {errors.cnh ? <Text style={{ color: 'red', marginBottom: 10 }}>{errors.cnh}</Text> : null}
 
       <Text style={styles.sectionTitle}>Informações do Veículo</Text>
       <TextInput
@@ -202,7 +244,7 @@ const DriverRegistrationScreen = () => {
         autoCapitalize="characters"
         placeholderTextColor="#888"
       />
-        {errors.placaVeiculo ? <Text style={{ color: 'red', marginBottom: 10 }}>{errors.placaVeiculo}</Text> : null}
+      {errors.placaVeiculo ? <Text style={{ color: 'red', marginBottom: 10 }}>{errors.placaVeiculo}</Text> : null}
       <Text style={styles.sectionTitle}>Cor do Veículo</Text>
       <View style={styles.pickerContainer}>
         <Picker
@@ -214,6 +256,46 @@ const DriverRegistrationScreen = () => {
             <Picker.Item key={cor} label={cor} value={cor} />
           ))}
         </Picker>
+      </View>
+
+      {/* NOVA SEÇÃO: Localização */}
+      <Text style={styles.sectionTitle}>Localização</Text>
+      <TouchableOpacity
+        style={styles.locationButton}
+        onPress={getUserLocation}
+        disabled={loadingLocation}
+      >
+        {loadingLocation ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.locationButtonText}>
+            📍 {formData.current_latitude ? 'Atualizar Localização' : 'Usar Minha Localização Atual'}
+          </Text>
+        )}
+      </TouchableOpacity>
+
+      {formData.current_latitude && formData.current_longitude && (
+        <View style={styles.locationInfo}>
+          <Text style={styles.locationText}>
+            ✅ Localização obtida: {formData.current_latitude.toFixed(6)}, {formData.current_longitude.toFixed(6)}
+          </Text>
+        </View>
+      )}
+
+      {/* NOVA SEÇÃO: Disponibilidade */}
+      <View style={styles.availabilityContainer}>
+        <View style={styles.availabilityTextContainer}>
+          <Text style={styles.sectionTitle}>Disponível para corridas</Text>
+          <Text style={styles.availabilitySubtext}>
+            Você poderá alterar isso depois
+          </Text>
+        </View>
+        <Switch
+          value={formData.is_available}
+          onValueChange={(value) => handleInputChange('is_available', value)}
+          trackColor={{ false: '#ccc', true: colors.primary }}
+          thumbColor={formData.is_available ? '#fff' : '#f4f3f4'}
+        />
       </View>
 
       <View style={styles.buttonContainer}>
@@ -271,6 +353,47 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: 30,
     justifyContent: 'center',
+  },
+  locationButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  locationButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  locationInfo: {
+    backgroundColor: '#e8f5e9',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  locationText: {
+    color: '#2e7d32',
+    fontSize: 14,
+  },
+  availabilityContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  availabilityTextContainer: {
+    flex: 1,
+  },
+  availabilitySubtext: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
   },
 });
 
