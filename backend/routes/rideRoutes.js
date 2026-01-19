@@ -227,11 +227,13 @@ router.get('/available', async (req, res) => {
           d.rating as driver_rating,
           (
             6371 * acos(
-              cos(radians($1)) * 
-              cos(radians(r.origin_latitude)) * 
-              cos(radians(r.origin_longitude) - radians($2)) + 
-              sin(radians($1)) * 
-              sin(radians(r.origin_latitude))
+              LEAST(1, GREATEST(-1,
+                cos(radians($1)) * 
+                cos(radians(r.destination_latitude)) * 
+                cos(radians(r.destination_longitude) - radians($2)) + 
+                sin(radians($1)) * 
+                sin(radians(r.destination_latitude))
+              ))
             )
           ) AS distance_km
         FROM rides r

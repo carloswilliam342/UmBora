@@ -49,6 +49,7 @@ const PassengerHomeScreen = () => {
         try {
             const response = await getAvailableRides(latitude, longitude, radius);
             console.log('Caronas encontradas:', response.count);
+            console.log('Dados das caronas:', JSON.stringify(response.rides, null, 2));
             setRides(response.rides || []);
         } catch (error) {
             console.error('Erro ao buscar caronas:', error);
@@ -68,15 +69,37 @@ const PassengerHomeScreen = () => {
                     10 // Raio de 10km do destino
                 );
 
+                console.log('Resposta completa da busca por destino:', JSON.stringify(response, null, 2));
+
                 if (response.rides && response.rides.length > 0) {
                     setRides(response.rides);
 
-                    // Centralizar mapa no destino
+                    // Calcular bounds para mostrar todos os marcadores
+                    // Incluir todas as origens das caronas encontradas
+                    const allCoordinates = response.rides.map(ride => ({
+                        latitude: ride.origin.latitude,
+                        longitude: ride.origin.longitude
+                    }));
+
+                    // Calcular centro e delta para mostrar todos os pontos
+                    const lats = allCoordinates.map(c => c.latitude);
+                    const lngs = allCoordinates.map(c => c.longitude);
+
+                    const minLat = Math.min(...lats);
+                    const maxLat = Math.max(...lats);
+                    const minLng = Math.min(...lngs);
+                    const maxLng = Math.max(...lngs);
+
+                    const centerLat = (minLat + maxLat) / 2;
+                    const centerLng = (minLng + maxLng) / 2;
+                    const deltaLat = (maxLat - minLat) * 1.5; // 1.5x para dar margem
+                    const deltaLng = (maxLng - minLng) * 1.5;
+
                     setRegion({
-                        latitude: destination.latitude,
-                        longitude: destination.longitude,
-                        latitudeDelta: 0.1,
-                        longitudeDelta: 0.1,
+                        latitude: centerLat,
+                        longitude: centerLng,
+                        latitudeDelta: Math.max(deltaLat, 0.1), // Mínimo 0.1
+                        longitudeDelta: Math.max(deltaLng, 0.1),
                     });
 
                     Alert.alert(
@@ -146,43 +169,31 @@ const PassengerHomeScreen = () => {
                     )}
 
                     {/* Marcadores das caronas disponíveis */}
-                    {rides.map((ride) => (
-                        <Marker
-                            key={ride.id}
-                            coordinate={{
-                                latitude: ride.origin.latitude,
-                                longitude: ride.origin.longitude,
-                            }}
-                            pinColor="green"
-                        >
-                            <Callout>
-                                <View style={styles.calloutContainer}>
-                                    <Text style={styles.calloutTitle}>🚗 Carona Disponível</Text>
-                                    <Text style={styles.calloutDriver}>Motorista: {ride.driver.name}</Text>
-                                    <Text style={styles.calloutText}>
-                                        📍 De: {ride.origin.address.split(',')[0]}
-                                    </Text>
-                                    <Text style={styles.calloutText}>
-                                        🎯 Para: {ride.destination.address.split(',')[0]}
-                                    </Text>
-                                    <Text style={styles.calloutText}>
-                                        📅 {formatDate(ride.departureTime)} às {formatTime(ride.departureTime)}
-                                    </Text>
-                                    <Text style={styles.calloutText}>
-                                        👥 {ride.availableSeats} vaga(s)
-                                    </Text>
-                                    <Text style={styles.calloutText}>
-                                        💰 {ride.pricePerSeat > 0 ? `R$ ${ride.pricePerSeat.toFixed(2)}` : 'Gratuito'}
-                                    </Text>
-                                    {ride.distance && (
-                                        <Text style={styles.calloutDistance}>
-                                            📏 {ride.distance} km de você
-                                        </Text>
-                                    )}
-                                </View>
-                            </Callout>
-                        </Marker>
-                    ))}
+                    {rides.map((ride) => {
+                        // Criar descrição detalhada para o marcador
+                        const description = [
+                            ride.driver?.name ? `👤 ${ride.driver.name}` : '',
+                            `📍 De: ${ride.origin?.address?.split(',')[0] || 'N/A'}`,
+                            `🎯 Para: ${ride.destination?.address?.split(',')[0] || 'N/A'}`,
+                            `📅 ${formatDate(ride.departureTime)} às ${formatTime(ride.departureTime)}`,
+                            `👥 ${ride.availableSeats} vaga${ride.availableSeats > 1 ? 's' : ''}`,
+                            `💰 ${ride.pricePerSeat > 0 ? `R$ ${ride.pricePerSeat.toFixed(2)}` : 'Grátis'}`,
+                            ride.distance ? `📏 A ${ride.distance} km` : ''
+                        ].filter(Boolean).join('\n');
+
+                        return (
+                            <Marker
+                                key={ride.id}
+                                coordinate={{
+                                    latitude: ride.origin.latitude,
+                                    longitude: ride.origin.longitude,
+                                }}
+                                pinColor="green"
+                                title="🚗 Carona Disponível"
+                                description={description}
+                            />
+                        );
+                    })}
                 </MapView>
             )}
 
@@ -339,7 +350,21 @@ const styles = StyleSheet.create({
     calloutText: {
         fontSize: 13,
         color: '#666',
-        marginBottom: 3,
+        marginBottom: 6,
+    },
+    calloutLabel: {
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    calloutDivider: {
+        height: 1,
+        backgroundColor: '#e0e0e0',
+        marginVertical: 8,
+    },
+    calloutRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 6,
     },
     calloutDistance: {
         fontSize: 12,

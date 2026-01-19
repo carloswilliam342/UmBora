@@ -5,7 +5,7 @@ const manifest = Constants.manifest || Constants.expoConfig || {};
 
 // Se você usa Expo Go no celular, coloque aqui o IP da sua máquina (ex: http://192.168.1.13:3000)
 // Este valor foi extraído do backend/.env como sugestão.
-const FALLBACK_API = 'http://192.168.1.8:3000';
+const FALLBACK_API = 'http://10.0.0.111:3000';
 
 export const API_URL = (manifest.extra && manifest.extra.API_URL) || process.env.EXPO_PUBLIC_API_URL || FALLBACK_API;
 

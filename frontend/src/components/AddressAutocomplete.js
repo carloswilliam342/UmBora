@@ -5,6 +5,7 @@ import {
     TouchableOpacity,
     Text,
     StyleSheet,
+    ScrollView,
     ActivityIndicator,
 } from 'react-native';
 import { searchAddress } from '../services/geocodingService';
@@ -95,9 +96,13 @@ const AddressAutocomplete = ({
             </View>
 
             {showSuggestions && suggestions.length > 0 && (
-                <View style={styles.suggestionsContainer}>
+                <ScrollView
+                    style={styles.suggestionsContainer}
+                    nestedScrollEnabled={true}
+                    keyboardShouldPersistTaps="handled"
+                >
                     {suggestions.map((item, index) => renderSuggestion(item, index))}
-                </View>
+                </ScrollView>
             )}
 
             {showSuggestions && query.length >= 3 && suggestions.length === 0 && !loading && (
