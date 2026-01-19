@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../config';
+import { saveUserSession } from '../services/authService';
 import {
   Container,
   GradientContainer,
@@ -19,13 +20,13 @@ import {
 
 const LoginScreen = () => {
   const navigation = useNavigation();
-  const [ loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-  
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -47,9 +48,9 @@ const LoginScreen = () => {
       const response = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {
-          'Content-Type' : 'application/json',
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           email: formData.email,
           password: formData.password,
         }),
@@ -58,6 +59,9 @@ const LoginScreen = () => {
       const data = await response.json();
 
       if (response.ok) {
+        // Salvar sessão do usuário
+        await saveUserSession(data.user.id);
+
         Alert.alert('Sucesso', data.message, [
           {
             text: 'OK',
@@ -68,7 +72,7 @@ const LoginScreen = () => {
             }
           }
         ])
-        
+
       } else { // Erros (4xx, 5xx)
         Alert.alert('Erro de Login', data.message || 'Não foi possível fazer login.');
       }
@@ -76,7 +80,7 @@ const LoginScreen = () => {
       console.error('Erro de rede:', error);
       Alert.alert('Erro', 'Não foi possível conectar ao servidor. Verifique sua conexão e o endereço da API.');
     }
-    finally{
+    finally {
       setLoading(false)
     }
   };
@@ -114,8 +118,8 @@ const LoginScreen = () => {
             secureTextEntry
             autoCapitalize="none"
           />
-          
-          <PrimaryButton onPress={handleLogin} disabled={loading} style={{opacity: loading ? 0.5 : 1}}>
+
+          <PrimaryButton onPress={handleLogin} disabled={loading} style={{ opacity: loading ? 0.5 : 1 }}>
             {loading ? <ActivityIndicator size="small" color={colors.white} /> : <ButtonText>Entrar</ButtonText>}
           </PrimaryButton>
 
@@ -125,8 +129,8 @@ const LoginScreen = () => {
             </ButtonText>
           </SecondaryButton>
 
-          <Text 
-            align="center" 
+          <Text
+            align="center"
             color={colors.primary}
             onPress={handleForgotPassword}
             style={{ textDecorationLine: 'underline' }}

@@ -10,6 +10,7 @@ import helmet from 'helmet';
 // Importa as rotas de motorista que criamos
 import driverRoutes from './routes/driverRoutes.js';
 import rideRoutes from './routes/rideRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 const app = express();
 const saltRounds = 10;
@@ -24,6 +25,8 @@ app.use(express.json());
 app.use('/api/drivers', driverRoutes);
 // Rotas para corridas (buscar motoristas próximos, etc)
 app.use('/api/rides', rideRoutes);
+// Rotas para usuários (perfil, atualização de dados)
+app.use('/api/users', userRoutes);
 
 app.get('/', async (req, res) => {
   try {

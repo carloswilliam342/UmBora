@@ -5,6 +5,8 @@ import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navig
 // 1. Importar o createBottomTabNavigator
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getUserSession } from './src/services/authService';
 
 import SplashScreen from './src/screens/SplashScreen.js';
 import OnboardingScreens from './src/screens/OnboardingScreens.js';
@@ -20,6 +22,7 @@ import DriverRidesScreen from './src/screens/DriverRidesScreen.js';
 import RegistroPassageiro from './src/screens/PassengerRegistrationScreen.js';
 import PassengerHomeScreen from './src/screens/PassengerHomeScreen.js';
 import SettingsScreen from './src/screens/SettingsScreen.js';
+import ProfileScreen from './src/screens/ProfileScreen.js';
 
 // A. Definir os tipos de parâmetros para cada rota do Stack Navigator
 type RootStackParamList = {
@@ -35,6 +38,7 @@ type RootStackParamList = {
   DriverRides: { userId: number };  // NOVO
   Passenger: { userId: number };
   PassengerHome: { userId: number };
+  Profile: { userId: number };
 };
 
 // 2. Criar os dois tipos de navegador
@@ -59,6 +63,8 @@ function MainAppTabs({ route }: MainAppTabsProps) {
             iconName = 'home';
           } else if (route.name === 'Settings') {
             iconName = 'settings';
+          } else if (route.name === 'Profile') {
+            iconName = 'person';
           } else {
             iconName = 'home'; // fallback
           }
@@ -74,10 +80,15 @@ function MainAppTabs({ route }: MainAppTabsProps) {
         initialParams={{ userId: userId }} // Passa o userId para a HomeScreen
       />
       <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        initialParams={{ userId: userId }}
+        options={{ headerShown: false, title: 'Perfil' }}
+      />
+      <Tab.Screen
         name="Settings"
         component={SettingsScreen}
         initialParams={{ userId: userId }}
-
         options={{ headerShown: false }}
       />
     </Tab.Navigator>
@@ -86,13 +97,42 @@ function MainAppTabs({ route }: MainAppTabsProps) {
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
+  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>('Onboarding');
+  const [initialParams, setInitialParams] = useState<any>(undefined);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000); // mostra splash por 2 segundos
-    return () => clearTimeout(timer);
+    checkUserSession();
   }, []);
+
+  const checkUserSession = async () => {
+    try {
+      // Aguardar um pouco para mostrar splash
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Verificar se usuário já fez onboarding
+      const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+
+      // Verificar se existe sessão ativa
+      const userId = await getUserSession();
+
+      if (userId) {
+        // Usuário tem sessão ativa, ir direto para Main
+        setInitialRoute('Main');
+        setInitialParams({ userId });
+      } else if (hasSeenOnboarding) {
+        // Já viu onboarding mas não está logado, ir para Auth
+        setInitialRoute('Auth');
+      } else {
+        // Primeira vez no app, mostrar onboarding
+        setInitialRoute('Onboarding');
+      }
+    } catch (error) {
+      console.error('Erro ao verificar sessão:', error);
+      setInitialRoute('Onboarding');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (isLoading) {
     return <SplashScreen />;
@@ -101,14 +141,24 @@ export default function App() {
   return (
     <NavigationContainer>
       <StatusBar style="auto" />
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Onboarding" component={OnboardingScreens} />
+      <Stack.Navigator
+        screenOptions={{ headerShown: false }}
+        initialRouteName={initialRoute}
+      >
+        <Stack.Screen
+          name="Onboarding"
+          component={OnboardingScreens}
+        />
         <Stack.Screen name="Auth" component={AuthScreens} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="PhoneVerification" component={PhoneVerificationScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         {/* 4. A rota "Main" agora carrega a navegação por abas */}
-        <Stack.Screen name="Main" component={MainAppTabs} />
+        <Stack.Screen
+          name="Main"
+          component={MainAppTabs}
+          initialParams={initialParams}
+        />
         <Stack.Screen name="DriverSignUpFlow" component={DriverRegistrationScreen} options={{ headerShown: true, title: 'Seja um Motorista' }} />
         <Stack.Screen name="DriverEdit" component={DriverEditScreen} options={{ headerShown: true, title: 'Editar Cadastro' }} />
         <Stack.Screen name="RideCreate" component={RideCreateScreen} options={{ headerShown: true, title: 'Cadastrar Carona' }} />

@@ -44,12 +44,12 @@ const SettingsScreen = ({ navigation }) => {
     }
   };
 
-  // Função para ir para o Perfil (Placeholder por enquanto)
+  // Função para ir para o Perfil
   const handleProfile = () => {
-    // Se você tiver uma tela de perfil, mude 'ProfileScreen' para o nome dela
-    // navigation.navigate('ProfileScreen', { userId: userId });
-    Alert.alert("Em breve", "Tela de perfil em desenvolvimento.");
+    // Navega para a aba Profile (nome registrado no Tab Navigator)
+    navigation.navigate('Profile', { userId: userId });
   };
+
 
   return (
     <Container style={{ backgroundColor: colors.background }}>

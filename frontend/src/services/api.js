@@ -21,3 +21,27 @@ export const applyToBeDriver = async (applicationData) => {
     throw new Error(errorMessage);
   }
 };
+
+// Função para buscar dados do usuário
+export const getUserProfile = async (userId) => {
+  try {
+    const response = await apiClient.get(`/api/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || 'Não foi possível buscar dados do usuário.';
+    throw new Error(errorMessage);
+  }
+};
+
+// Função para atualizar dados do usuário
+export const updateUserProfile = async (userId, userData) => {
+  try {
+    // userData = { name, email, phone, password }
+    const response = await apiClient.put(`/api/users/${userId}`, userData);
+    return response.data;
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || 'Não foi possível atualizar dados do usuário.';
+    throw new Error(errorMessage);
+  }
+};
+
