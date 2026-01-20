@@ -60,13 +60,23 @@ const PassengerHomeScreen = () => {
     const handleDestinationSelect = async (destination) => {
         setSearchDestination(destination);
 
+        // Extrair cidade/região do endereço para busca textual
+        const addressParts = destination.displayName.split(',');
+        const searchCity = addressParts[0]?.trim() || destination.displayName;
+
         // Filtrar caronas que vão para perto do destino selecionado
         if (userLocation) {
             try {
+                console.log('Buscando caronas para:', {
+                    coordenadas: { lat: destination.latitude, lng: destination.longitude },
+                    textoBusca: searchCity
+                });
+
                 const response = await getAvailableRides(
                     destination.latitude,
                     destination.longitude,
-                    10 // Raio de 10km do destino
+                    50, // Raio de 50km do destino
+                    searchCity // Enviar texto para busca
                 );
 
                 console.log('Resposta completa da busca por destino:', JSON.stringify(response, null, 2));

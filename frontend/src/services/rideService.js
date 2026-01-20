@@ -28,12 +28,17 @@ export const getDriverRides = async (driverId) => {
 };
 
 /**
- * Buscar caronas disponíveis próximas
+ * Buscar caronas disponíveis próximas com busca inteligente
  */
-export const getAvailableRides = async (latitude, longitude, radius = 10) => {
-    const response = await axios.get(`${API_URL}/api/rides/available`, {
-        params: { lat: latitude, lng: longitude, radius }
-    });
+export const getAvailableRides = async (latitude, longitude, radius = 10, searchText = null) => {
+    const params = { lat: latitude, lng: longitude, radius };
+
+    // Adicionar texto de busca se fornecido
+    if (searchText) {
+        params.searchText = searchText;
+    }
+
+    const response = await axios.get(`${API_URL}/api/rides/available`, { params });
     return response.data;
 };
 

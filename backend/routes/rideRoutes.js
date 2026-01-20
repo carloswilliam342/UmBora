@@ -202,10 +202,10 @@ router.get('/driver/:driverId', async (req, res) => {
 
 /**
  * GET /api/rides/available
- * Buscar caronas disponíveis próximas
+ * Buscar caronas disponíveis com busca inteligente (coordenadas + texto)
  */
 router.get('/available', async (req, res) => {
-    const { lat, lng, radius = 10 } = req.query;
+    const { lat, lng, radius = 50, searchText = '' } = req.query; // String vazia como padrão
 
     if (!lat || !lng) {
         return res.status(400).json({ message: 'Latitude e longitude são obrigatórias' });
@@ -215,7 +215,14 @@ router.get('/available', async (req, res) => {
         const latitude = parseFloat(lat);
         const longitude = parseFloat(lng);
         const radiusKm = parseFloat(radius);
+        const searchTerm = searchText || ''; // Garantir que sempre seja string
 
+        console.log('=== BUSCA DE CARONAS ===');
+        console.log('Coordenadas:', { latitude, longitude });
+        console.log('Raio:', radiusKm, 'km');
+        console.log('Texto de busca:', searchTerm || 'N/A');
+
+        // Query híbrida: busca por distância + busca textual
         const query = `
       SELECT * FROM (
         SELECT 
@@ -235,7 +242,11 @@ router.get('/available', async (req, res) => {
                 sin(radians(r.destination_latitude))
               ))
             )
-          ) AS distance_km
+          ) AS distance_km,
+          CASE 
+            WHEN $4::TEXT IS NOT NULL AND $4::TEXT != '' AND LOWER(r.destination_address) LIKE LOWER('%' || $4::TEXT || '%') THEN 1
+            ELSE 0
+          END AS text_match
         FROM rides r
         INNER JOIN drivers d ON r.driver_id = d.id
         INNER JOIN users u ON d.user_id = u.id
@@ -244,38 +255,61 @@ router.get('/available', async (req, res) => {
           AND r.departure_time > NOW()
       ) AS nearby_rides
       WHERE distance_km <= $3
-      ORDER BY distance_km ASC, departure_time ASC
+         OR ($4::TEXT IS NOT NULL AND $4::TEXT != '' AND text_match = 1)
+      ORDER BY 
+        text_match DESC,
+        distance_km ASC,
+        departure_time ASC
       LIMIT 20
     `;
 
-        const result = await pool.query(query, [latitude, longitude, radiusKm]);
+        const result = await pool.query(query, [latitude, longitude, radiusKm, searchTerm]);
 
-        const rides = result.rows.map(ride => ({
-            id: ride.id,
-            driver: {
-                name: ride.driver_name,
-                rating: ride.driver_rating,
-                vehicle: {
-                    model: ride.vehicle_model,
-                    plate: ride.vehicle_plate,
-                    color: ride.vehicle_color
-                }
-            },
-            origin: {
-                address: ride.origin_address,
-                latitude: parseFloat(ride.origin_latitude),
-                longitude: parseFloat(ride.origin_longitude)
-            },
-            destination: {
-                address: ride.destination_address,
-                latitude: parseFloat(ride.destination_latitude),
-                longitude: parseFloat(ride.destination_longitude)
-            },
-            departureTime: ride.departure_time,
-            availableSeats: ride.available_seats,
-            pricePerSeat: parseFloat(ride.price_per_seat),
-            distance: parseFloat(ride.distance_km).toFixed(2)
-        }));
+        console.log('Total de caronas encontradas:', result.rows.length);
+
+        const rides = result.rows.map(ride => {
+            const rideData = {
+                id: ride.id,
+                driver: {
+                    name: ride.driver_name,
+                    rating: ride.driver_rating,
+                    vehicle: {
+                        model: ride.vehicle_model,
+                        plate: ride.vehicle_plate,
+                        color: ride.vehicle_color
+                    }
+                },
+                origin: {
+                    address: ride.origin_address,
+                    latitude: parseFloat(ride.origin_latitude),
+                    longitude: parseFloat(ride.origin_longitude)
+                },
+                destination: {
+                    address: ride.destination_address,
+                    latitude: parseFloat(ride.destination_latitude),
+                    longitude: parseFloat(ride.destination_longitude)
+                },
+                departureTime: ride.departure_time,
+                availableSeats: ride.available_seats,
+                pricePerSeat: parseFloat(ride.price_per_seat),
+                distance: parseFloat(ride.distance_km).toFixed(2)
+            };
+
+            // Indicar se houve match textual
+            if (searchTerm && ride.text_match === 1) {
+                rideData.textMatch = 'Sim';
+            }
+
+            console.log(`Carona ${ride.id}:`, {
+                destino: ride.destination_address,
+                distancia: rideData.distance + 'km',
+                matchTextual: rideData.textMatch || 'Não'
+            });
+
+            return rideData;
+        });
+
+        console.log('=== FIM BUSCA ===\n');
 
         res.status(200).json({ success: true, count: rides.length, rides });
     } catch (err) {
