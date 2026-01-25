@@ -232,6 +232,7 @@ router.get('/available', async (req, res) => {
           v.placa as vehicle_plate,
           v.cor as vehicle_color,
           d.rating as driver_rating,
+          COALESCE((SELECT COUNT(*) FROM ride_passengers rp WHERE rp.ride_id = r.id AND rp.status IN ('confirmed', 'pending')), 0) as reserved_seats,
           (
             6371 * acos(
               LEAST(1, GREATEST(-1,
@@ -268,6 +269,9 @@ router.get('/available', async (req, res) => {
         console.log('Total de caronas encontradas:', result.rows.length);
 
         const rides = result.rows.map(ride => {
+            const reservedCount = parseInt(ride.reserved_seats) || 0;
+            const actualAvailableSeats = Math.max(0, ride.available_seats - reservedCount);
+
             const rideData = {
                 id: ride.id,
                 driver: {
@@ -290,7 +294,9 @@ router.get('/available', async (req, res) => {
                     longitude: parseFloat(ride.destination_longitude)
                 },
                 departureTime: ride.departure_time,
-                availableSeats: ride.available_seats,
+                availableSeats: actualAvailableSeats,
+                totalSeats: ride.available_seats,
+                reservedSeats: reservedCount,
                 pricePerSeat: parseFloat(ride.price_per_seat),
                 distance: parseFloat(ride.distance_km).toFixed(2)
             };
@@ -303,6 +309,7 @@ router.get('/available', async (req, res) => {
             console.log(`Carona ${ride.id}:`, {
                 destino: ride.destination_address,
                 distancia: rideData.distance + 'km',
+                vagasDisponiveis: actualAvailableSeats,
                 matchTextual: rideData.textMatch || 'Não'
             });
 
@@ -398,4 +405,256 @@ router.delete('/:rideId', async (req, res) => {
     }
 });
 
+/**
+ * GET /api/rides/:rideId
+ * Buscar detalhes completos de uma carona
+ */
+router.get('/:rideId', async (req, res) => {
+    const { rideId } = req.params;
+
+    try {
+        // Buscar dados da carona com info do motorista
+        const rideResult = await pool.query(
+            `SELECT 
+                r.*,
+                u.name as driver_name,
+                u.phone as driver_phone,
+                v.modelo as vehicle_model,
+                v.placa as vehicle_plate,
+                v.cor as vehicle_color,
+                d.rating as driver_rating
+            FROM rides r
+            INNER JOIN drivers d ON r.driver_id = d.id
+            INNER JOIN users u ON d.user_id = u.id
+            LEFT JOIN vehicles v ON v.driver_id = d.id
+            WHERE r.id = $1`,
+            [rideId]
+        );
+
+        if (rideResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Carona não encontrada' });
+        }
+
+        const ride = rideResult.rows[0];
+
+        // Contar passageiros confirmados
+        const passengersResult = await pool.query(
+            `SELECT COUNT(*) as confirmed_count 
+            FROM ride_passengers 
+            WHERE ride_id = $1 AND status = 'confirmed'`,
+            [rideId]
+        );
+
+        const confirmedPassengers = parseInt(passengersResult.rows[0].confirmed_count) || 0;
+        const actualAvailableSeats = ride.available_seats - confirmedPassengers;
+
+        res.status(200).json({
+            success: true,
+            ride: {
+                id: ride.id,
+                driver: {
+                    id: ride.driver_id,
+                    name: ride.driver_name,
+                    phone: ride.driver_phone,
+                    rating: ride.driver_rating,
+                    vehicle: {
+                        model: ride.vehicle_model,
+                        plate: ride.vehicle_plate,
+                        color: ride.vehicle_color
+                    }
+                },
+                origin: {
+                    address: ride.origin_address,
+                    latitude: parseFloat(ride.origin_latitude),
+                    longitude: parseFloat(ride.origin_longitude)
+                },
+                destination: {
+                    address: ride.destination_address,
+                    latitude: parseFloat(ride.destination_latitude),
+                    longitude: parseFloat(ride.destination_longitude)
+                },
+                departureTime: ride.departure_time,
+                totalSeats: ride.available_seats,
+                availableSeats: actualAvailableSeats,
+                confirmedPassengers,
+                pricePerSeat: parseFloat(ride.price_per_seat),
+                status: ride.status,
+                createdAt: ride.created_at
+            }
+        });
+    } catch (err) {
+        console.error('Erro ao buscar detalhes da carona:', err);
+        res.status(500).json({ message: 'Erro ao buscar carona', error: err.message });
+    }
+});
+
+/**
+ * POST /api/rides/:rideId/request
+ * Passageiro solicita vaga em uma carona
+ */
+router.post('/:rideId/request', async (req, res) => {
+    const { rideId } = req.params;
+    const { passengerId } = req.body;
+
+    if (!passengerId) {
+        return res.status(400).json({ message: 'passengerId é obrigatório' });
+    }
+
+    try {
+        // Verificar se a carona existe e está disponível
+        const rideResult = await pool.query(
+            `SELECT r.*, 
+                (SELECT COUNT(*) FROM ride_passengers WHERE ride_id = r.id AND status = 'confirmed') as confirmed_count
+            FROM rides r 
+            WHERE r.id = $1 AND r.status = 'available' AND r.departure_time > NOW()`,
+            [rideId]
+        );
+
+        if (rideResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Carona não encontrada ou não está mais disponível' });
+        }
+
+        const ride = rideResult.rows[0];
+        const confirmedCount = parseInt(ride.confirmed_count) || 0;
+        const actualAvailableSeats = ride.available_seats - confirmedCount;
+
+        if (actualAvailableSeats <= 0) {
+            return res.status(400).json({ message: 'Não há vagas disponíveis nesta carona' });
+        }
+
+        // Verificar se já existe solicitação deste passageiro
+        const existingRequest = await pool.query(
+            `SELECT * FROM ride_passengers WHERE ride_id = $1 AND passenger_id = $2`,
+            [rideId, passengerId]
+        );
+
+        if (existingRequest.rows.length > 0) {
+            const status = existingRequest.rows[0].status;
+            if (status === 'pending') {
+                return res.status(400).json({ message: 'Você já solicitou vaga nesta carona' });
+            }
+            if (status === 'confirmed') {
+                return res.status(400).json({ message: 'Você já está confirmado nesta carona' });
+            }
+            // Se foi rejeitado ou cancelado, permitir nova solicitação
+            await pool.query(
+                `UPDATE ride_passengers SET status = 'pending', requested_at = CURRENT_TIMESTAMP, responded_at = NULL 
+                WHERE ride_id = $1 AND passenger_id = $2`,
+                [rideId, passengerId]
+            );
+        } else {
+            // Criar nova solicitação
+            await pool.query(
+                `INSERT INTO ride_passengers (ride_id, passenger_id, status) VALUES ($1, $2, 'pending')`,
+                [rideId, passengerId]
+            );
+        }
+
+        res.status(201).json({
+            success: true,
+            message: 'Solicitação enviada! Aguarde a confirmação do motorista.',
+            remainingSeats: actualAvailableSeats - 1
+        });
+    } catch (err) {
+        console.error('Erro ao solicitar vaga:', err);
+        res.status(500).json({ message: 'Erro ao solicitar vaga', error: err.message });
+    }
+});
+
+/**
+ * GET /api/rides/:rideId/passengers
+ * Listar passageiros de uma carona (para o motorista)
+ */
+router.get('/:rideId/passengers', async (req, res) => {
+    const { rideId } = req.params;
+
+    try {
+        const result = await pool.query(
+            `SELECT 
+                rp.*,
+                u.name as passenger_name,
+                u.phone as passenger_phone
+            FROM ride_passengers rp
+            INNER JOIN passengers p ON rp.passenger_id = p.id
+            INNER JOIN users u ON p.user_id = u.id
+            WHERE rp.ride_id = $1
+            ORDER BY rp.requested_at DESC`,
+            [rideId]
+        );
+
+        const passengers = result.rows.map(p => ({
+            id: p.id,
+            passengerId: p.passenger_id,
+            name: p.passenger_name,
+            phone: p.passenger_phone,
+            status: p.status,
+            requestedAt: p.requested_at,
+            respondedAt: p.responded_at
+        }));
+
+        res.status(200).json({ success: true, passengers });
+    } catch (err) {
+        console.error('Erro ao listar passageiros:', err);
+        res.status(500).json({ message: 'Erro ao listar passageiros', error: err.message });
+    }
+});
+
+/**
+ * PUT /api/rides/:rideId/passengers/:passengerId
+ * Motorista responde solicitação (confirma ou rejeita)
+ */
+router.put('/:rideId/passengers/:passengerId', async (req, res) => {
+    const { rideId, passengerId } = req.params;
+    const { status } = req.body; // 'confirmed' ou 'rejected'
+
+    if (!['confirmed', 'rejected'].includes(status)) {
+        return res.status(400).json({ message: 'Status deve ser "confirmed" ou "rejected"' });
+    }
+
+    try {
+        // Se confirmando, verificar se ainda há vagas
+        if (status === 'confirmed') {
+            const rideResult = await pool.query(
+                `SELECT r.available_seats,
+                    (SELECT COUNT(*) FROM ride_passengers WHERE ride_id = r.id AND status = 'confirmed') as confirmed_count
+                FROM rides r WHERE r.id = $1`,
+                [rideId]
+            );
+
+            if (rideResult.rows.length === 0) {
+                return res.status(404).json({ message: 'Carona não encontrada' });
+            }
+
+            const ride = rideResult.rows[0];
+            const confirmedCount = parseInt(ride.confirmed_count) || 0;
+
+            if (confirmedCount >= ride.available_seats) {
+                return res.status(400).json({ message: 'Não há mais vagas disponíveis' });
+            }
+        }
+
+        const result = await pool.query(
+            `UPDATE ride_passengers 
+            SET status = $1, responded_at = CURRENT_TIMESTAMP 
+            WHERE ride_id = $2 AND passenger_id = $3
+            RETURNING *`,
+            [status, rideId, passengerId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Solicitação não encontrada' });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: status === 'confirmed' ? 'Passageiro confirmado!' : 'Solicitação rejeitada',
+            passenger: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Erro ao atualizar status do passageiro:', err);
+        res.status(500).json({ message: 'Erro ao processar solicitação', error: err.message });
+    }
+});
+
 export default router;
+

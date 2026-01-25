@@ -132,6 +132,30 @@ app.post('/api/passenger', async (req, res) => {
   }
 });
 
+// Buscar dados do passageiro pelo userId
+app.get('/api/passenger/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const result = await pool.query(
+      'SELECT id, user_id, cpf FROM passengers WHERE user_id = $1',
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Passageiro não encontrado.' });
+    }
+
+    res.status(200).json({
+      success: true,
+      passenger: result.rows[0]
+    });
+  } catch (err) {
+    console.error('Erro ao buscar passageiro:', err);
+    res.status(500).json({ message: 'Erro interno do servidor.' });
+  }
+});
+
 app.listen(porta, () => {
   console.log(`Servidor rodando na porta http://localhost:${porta}`);
 });

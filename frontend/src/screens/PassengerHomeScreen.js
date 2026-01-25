@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
-import MapView, { Marker, Callout } from 'react-native-maps';
+import { View, StyleSheet, Text, TouchableOpacity, Alert, Modal, ActivityIndicator } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { useNavigation } from '@react-navigation/native';
 import { colors } from '../components/StyledComponents';
-import { getAvailableRides } from '../services/rideService';
+import { getAvailableRides, requestRide, getPassengerByUserId } from '../services/rideService';
+import { getUserSession } from '../services/authService';
 import AddressAutocomplete from '../components/AddressAutocomplete';
 
 const PassengerHomeScreen = () => {
+    const navigation = useNavigation();
     const [userLocation, setUserLocation] = useState(null);
     const [rides, setRides] = useState([]);
     const [region, setRegion] = useState(null);
@@ -14,9 +17,32 @@ const PassengerHomeScreen = () => {
     const [searchDestination, setSearchDestination] = useState(null);
     const [showSearch, setShowSearch] = useState(false);
 
+    // Estados para o modal de detalhes da carona
+    const [selectedRide, setSelectedRide] = useState(null);
+    const [showRideModal, setShowRideModal] = useState(false);
+    const [requesting, setRequesting] = useState(false);
+    const [passengerId, setPassengerId] = useState(null);
+    const [userId, setUserId] = useState(null);
+
     useEffect(() => {
         getUserLocation();
+        loadPassengerId();
     }, []);
+
+    const loadPassengerId = async () => {
+        try {
+            const userIdFromSession = await getUserSession();
+            if (userIdFromSession) {
+                setUserId(userIdFromSession);
+                const response = await getPassengerByUserId(userIdFromSession);
+                if (response.passenger) {
+                    setPassengerId(response.passenger.id);
+                }
+            }
+        } catch (error) {
+            console.log('Passageiro não encontrado:', error);
+        }
+    };
 
     const getUserLocation = async () => {
         try {
@@ -49,7 +75,6 @@ const PassengerHomeScreen = () => {
         try {
             const response = await getAvailableRides(latitude, longitude, radius);
             console.log('Caronas encontradas:', response.count);
-            console.log('Dados das caronas:', JSON.stringify(response.rides, null, 2));
             setRides(response.rides || []);
         } catch (error) {
             console.error('Erro ao buscar caronas:', error);
@@ -60,38 +85,26 @@ const PassengerHomeScreen = () => {
     const handleDestinationSelect = async (destination) => {
         setSearchDestination(destination);
 
-        // Extrair cidade/região do endereço para busca textual
         const addressParts = destination.displayName.split(',');
         const searchCity = addressParts[0]?.trim() || destination.displayName;
 
-        // Filtrar caronas que vão para perto do destino selecionado
         if (userLocation) {
             try {
-                console.log('Buscando caronas para:', {
-                    coordenadas: { lat: destination.latitude, lng: destination.longitude },
-                    textoBusca: searchCity
-                });
-
                 const response = await getAvailableRides(
                     destination.latitude,
                     destination.longitude,
-                    50, // Raio de 50km do destino
-                    searchCity // Enviar texto para busca
+                    50,
+                    searchCity
                 );
-
-                console.log('Resposta completa da busca por destino:', JSON.stringify(response, null, 2));
 
                 if (response.rides && response.rides.length > 0) {
                     setRides(response.rides);
 
-                    // Calcular bounds para mostrar todos os marcadores
-                    // Incluir todas as origens das caronas encontradas
                     const allCoordinates = response.rides.map(ride => ({
                         latitude: ride.origin.latitude,
                         longitude: ride.origin.longitude
                     }));
 
-                    // Calcular centro e delta para mostrar todos os pontos
                     const lats = allCoordinates.map(c => c.latitude);
                     const lngs = allCoordinates.map(c => c.longitude);
 
@@ -100,32 +113,24 @@ const PassengerHomeScreen = () => {
                     const minLng = Math.min(...lngs);
                     const maxLng = Math.max(...lngs);
 
-                    const centerLat = (minLat + maxLat) / 2;
-                    const centerLng = (minLng + maxLng) / 2;
-                    const deltaLat = (maxLat - minLat) * 1.5; // 1.5x para dar margem
-                    const deltaLng = (maxLng - minLng) * 1.5;
-
                     setRegion({
-                        latitude: centerLat,
-                        longitude: centerLng,
-                        latitudeDelta: Math.max(deltaLat, 0.1), // Mínimo 0.1
-                        longitudeDelta: Math.max(deltaLng, 0.1),
+                        latitude: (minLat + maxLat) / 2,
+                        longitude: (minLng + maxLng) / 2,
+                        latitudeDelta: Math.max((maxLat - minLat) * 1.5, 0.1),
+                        longitudeDelta: Math.max((maxLng - minLng) * 1.5, 0.1),
                     });
 
                     Alert.alert(
                         'Caronas Encontradas',
-                        `Encontramos ${response.rides.length} carona(s) disponível(is) para este destino!`
+                        `Encontramos ${response.rides.length} carona(s) disponível(is)!`
                     );
                 } else {
-                    Alert.alert(
-                        'Nenhuma Carona Encontrada',
-                        'Não há caronas disponíveis para este destino no momento.'
-                    );
+                    Alert.alert('Nenhuma Carona', 'Não há caronas para este destino.');
                     setRides([]);
                 }
             } catch (error) {
-                console.error('Erro ao buscar caronas por destino:', error);
-                Alert.alert('Erro', 'Não foi possível buscar caronas para este destino.');
+                console.error('Erro ao buscar caronas:', error);
+                Alert.alert('Erro', 'Não foi possível buscar caronas.');
             }
         }
     };
@@ -143,19 +148,71 @@ const PassengerHomeScreen = () => {
         }
     };
 
+    const handleMarkerPress = (ride) => {
+        setSelectedRide(ride);
+        setShowRideModal(true);
+    };
+
+    const handleRequestRide = async () => {
+        if (!passengerId) {
+            Alert.alert(
+                'Cadastro Incompleto',
+                'Você precisa completar seu cadastro de passageiro para solicitar caronas.',
+                [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                        text: 'Completar Cadastro',
+                        onPress: () => {
+                            setShowRideModal(false);
+                            navigation.navigate('Passenger', { userId: userId });
+                        }
+                    }
+                ]
+            );
+            return;
+        }
+
+        if (!selectedRide) return;
+
+        setRequesting(true);
+        try {
+            const response = await requestRide(selectedRide.id, passengerId);
+
+            Alert.alert(
+                '✅ Solicitação Enviada!',
+                response.message || 'Aguarde a confirmação do motorista.',
+                [{ text: 'OK', onPress: () => setShowRideModal(false) }]
+            );
+
+            // Atualizar lista de caronas
+            if (userLocation) {
+                await fetchAvailableRides(userLocation.latitude, userLocation.longitude);
+            }
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Erro ao solicitar vaga.';
+            Alert.alert('Erro', errorMessage);
+        } finally {
+            setRequesting(false);
+        }
+    };
+
     const formatDate = (dateString) => {
         const date = new Date(dateString);
-        return date.toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-        });
+        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     };
 
     const formatTime = (dateString) => {
         const date = new Date(dateString);
-        return date.toLocaleTimeString('pt-BR', {
-            hour: '2-digit',
-            minute: '2-digit',
+        return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const formatFullDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('pt-BR', {
+            weekday: 'long',
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric'
         });
     };
 
@@ -179,31 +236,17 @@ const PassengerHomeScreen = () => {
                     )}
 
                     {/* Marcadores das caronas disponíveis */}
-                    {rides.map((ride) => {
-                        // Criar descrição detalhada para o marcador
-                        const description = [
-                            ride.driver?.name ? `👤 ${ride.driver.name}` : '',
-                            `📍 De: ${ride.origin?.address?.split(',')[0] || 'N/A'}`,
-                            `🎯 Para: ${ride.destination?.address?.split(',')[0] || 'N/A'}`,
-                            `📅 ${formatDate(ride.departureTime)} às ${formatTime(ride.departureTime)}`,
-                            `👥 ${ride.availableSeats} vaga${ride.availableSeats > 1 ? 's' : ''}`,
-                            `💰 ${ride.pricePerSeat > 0 ? `R$ ${ride.pricePerSeat.toFixed(2)}` : 'Grátis'}`,
-                            ride.distance ? `📏 A ${ride.distance} km` : ''
-                        ].filter(Boolean).join('\n');
-
-                        return (
-                            <Marker
-                                key={ride.id}
-                                coordinate={{
-                                    latitude: ride.origin.latitude,
-                                    longitude: ride.origin.longitude,
-                                }}
-                                pinColor="green"
-                                title="🚗 Carona Disponível"
-                                description={description}
-                            />
-                        );
-                    })}
+                    {rides.map((ride) => (
+                        <Marker
+                            key={ride.id}
+                            coordinate={{
+                                latitude: ride.origin.latitude,
+                                longitude: ride.origin.longitude,
+                            }}
+                            pinColor={ride.availableSeats > 0 ? "green" : "#9E9E9E"}
+                            onPress={() => handleMarkerPress(ride)}
+                        />
+                    ))}
                 </MapView>
             )}
 
@@ -224,35 +267,170 @@ const PassengerHomeScreen = () => {
                 ) : (
                     <>
                         <AddressAutocomplete
-                            placeholder="Digite seu destino (ex: Av. Paulista, São Paulo)"
+                            placeholder="Digite seu destino"
                             onSelectAddress={handleDestinationSelect}
                         />
 
                         {searchDestination && (
                             <View style={styles.selectedDestination}>
-                                <Text style={styles.selectedLabel}>Destino selecionado:</Text>
+                                <Text style={styles.selectedLabel}>Destino:</Text>
                                 <Text style={styles.selectedText} numberOfLines={2}>
                                     {searchDestination.displayName}
                                 </Text>
                                 <TouchableOpacity
                                     style={styles.clearButton}
                                     onPress={clearSearch}
-                                    activeOpacity={0.7}
                                 >
-                                    <Text style={styles.clearButtonText}>Limpar Busca</Text>
+                                    <Text style={styles.clearButtonText}>Limpar</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
                     </>
                 )}
 
-                {/* Contador de caronas */}
                 <View style={styles.ridesCounter}>
                     <Text style={styles.counterText}>
                         {rides.length} carona(s) disponível(is)
                     </Text>
                 </View>
             </View>
+
+            {/* Modal de Detalhes da Carona */}
+            <Modal
+                visible={showRideModal}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setShowRideModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        {selectedRide && (
+                            <>
+                                {/* Header */}
+                                <View style={styles.modalHeader}>
+                                    <Text style={styles.modalTitle}>🚗 Detalhes da Carona</Text>
+                                    <TouchableOpacity
+                                        style={styles.closeButton}
+                                        onPress={() => setShowRideModal(false)}
+                                    >
+                                        <Text style={styles.closeButtonText}>✕</Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {/* Motorista */}
+                                <View style={styles.driverSection}>
+                                    <View style={styles.driverAvatar}>
+                                        <Text style={styles.driverAvatarText}>
+                                            {selectedRide.driver?.name?.charAt(0) || '?'}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.driverInfo}>
+                                        <Text style={styles.driverName}>
+                                            {selectedRide.driver?.name || 'Motorista'}
+                                        </Text>
+                                        <Text style={styles.driverRating}>
+                                            ⭐ {Number(selectedRide.driver?.rating) ? Number(selectedRide.driver.rating).toFixed(1) : '5.0'}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                {/* Veículo */}
+                                {selectedRide.driver?.vehicle && (
+                                    <View style={styles.vehicleSection}>
+                                        <Text style={styles.vehicleText}>
+                                            🚙 {selectedRide.driver.vehicle.model} • {selectedRide.driver.vehicle.color}
+                                        </Text>
+                                        <Text style={styles.vehiclePlate}>
+                                            {selectedRide.driver.vehicle.plate}
+                                        </Text>
+                                    </View>
+                                )}
+
+                                {/* Rota */}
+                                <View style={styles.routeSection}>
+                                    <View style={styles.routeItem}>
+                                        <Text style={styles.routeIcon}>📍</Text>
+                                        <View style={styles.routeTextContainer}>
+                                            <Text style={styles.routeLabel}>Origem</Text>
+                                            <Text style={styles.routeAddress} numberOfLines={2}>
+                                                {selectedRide.origin?.address || 'N/A'}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.routeDivider} />
+                                    <View style={styles.routeItem}>
+                                        <Text style={styles.routeIcon}>🎯</Text>
+                                        <View style={styles.routeTextContainer}>
+                                            <Text style={styles.routeLabel}>Destino</Text>
+                                            <Text style={styles.routeAddress} numberOfLines={2}>
+                                                {selectedRide.destination?.address || 'N/A'}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                {/* Informações */}
+                                <View style={styles.infoGrid}>
+                                    <View style={styles.infoItem}>
+                                        <Text style={styles.infoIcon}>📅</Text>
+                                        <Text style={styles.infoValue}>
+                                            {formatDate(selectedRide.departureTime)}
+                                        </Text>
+                                        <Text style={styles.infoLabel}>Data</Text>
+                                    </View>
+                                    <View style={styles.infoItem}>
+                                        <Text style={styles.infoIcon}>⏰</Text>
+                                        <Text style={styles.infoValue}>
+                                            {formatTime(selectedRide.departureTime)}
+                                        </Text>
+                                        <Text style={styles.infoLabel}>Horário</Text>
+                                    </View>
+                                    <View style={styles.infoItem}>
+                                        <Text style={styles.infoIcon}>👥</Text>
+                                        <Text style={[
+                                            styles.infoValue,
+                                            selectedRide.availableSeats === 0 && styles.noSeats
+                                        ]}>
+                                            {selectedRide.availableSeats}
+                                        </Text>
+                                        <Text style={styles.infoLabel}>Vagas</Text>
+                                    </View>
+                                    <View style={styles.infoItem}>
+                                        <Text style={styles.infoIcon}>💰</Text>
+                                        <Text style={styles.infoValue}>
+                                            {selectedRide.pricePerSeat > 0
+                                                ? `R$ ${selectedRide.pricePerSeat.toFixed(2)}`
+                                                : 'Grátis'}
+                                        </Text>
+                                        <Text style={styles.infoLabel}>Por vaga</Text>
+                                    </View>
+                                </View>
+
+                                {/* Botão de Solicitar */}
+                                <TouchableOpacity
+                                    style={[
+                                        styles.requestButton,
+                                        (selectedRide.availableSeats === 0 || requesting) && styles.requestButtonDisabled
+                                    ]}
+                                    onPress={handleRequestRide}
+                                    disabled={selectedRide.availableSeats === 0 || requesting}
+                                    activeOpacity={0.8}
+                                >
+                                    {requesting ? (
+                                        <ActivityIndicator color="#fff" />
+                                    ) : (
+                                        <Text style={styles.requestButtonText}>
+                                            {selectedRide.availableSeats === 0
+                                                ? '😔 Sem vagas disponíveis'
+                                                : '✋ Solicitar Vaga'}
+                                        </Text>
+                                    )}
+                                </TouchableOpacity>
+                            </>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -341,46 +519,172 @@ const styles = StyleSheet.create({
         color: '#666',
         textAlign: 'center',
     },
-    calloutContainer: {
-        width: 250,
-        padding: 10,
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'flex-end',
     },
-    calloutTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: colors.primary,
-        marginBottom: 8,
+    modalContent: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 25,
+        borderTopRightRadius: 25,
+        padding: 20,
+        maxHeight: '85%',
     },
-    calloutDriver: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 5,
-    },
-    calloutText: {
-        fontSize: 13,
-        color: '#666',
-        marginBottom: 6,
-    },
-    calloutLabel: {
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    calloutDivider: {
-        height: 1,
-        backgroundColor: '#e0e0e0',
-        marginVertical: 8,
-    },
-    calloutRow: {
+    modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 6,
+        alignItems: 'center',
+        marginBottom: 20,
     },
-    calloutDistance: {
-        fontSize: 12,
-        color: colors.primary,
+    modalTitle: {
+        fontSize: 20,
         fontWeight: 'bold',
-        marginTop: 5,
+        color: colors.primary,
+    },
+    closeButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#f0f0f0',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    closeButtonText: {
+        fontSize: 16,
+        color: '#666',
+    },
+    driverSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 15,
+        padding: 15,
+        backgroundColor: '#f8f9fa',
+        borderRadius: 12,
+    },
+    driverAvatar: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    driverAvatarText: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
+    driverInfo: {
+        marginLeft: 15,
+    },
+    driverName: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#333',
+    },
+    driverRating: {
+        fontSize: 14,
+        color: '#666',
+        marginTop: 4,
+    },
+    vehicleSection: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 12,
+        backgroundColor: '#e8f5e9',
+        borderRadius: 8,
+        marginBottom: 15,
+    },
+    vehicleText: {
+        fontSize: 14,
+        color: '#333',
+    },
+    vehiclePlate: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: colors.primary,
+    },
+    routeSection: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        padding: 15,
+        marginBottom: 15,
+    },
+    routeItem: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    routeIcon: {
+        fontSize: 18,
+        marginRight: 10,
+    },
+    routeTextContainer: {
+        flex: 1,
+    },
+    routeLabel: {
+        fontSize: 12,
+        color: '#999',
+        marginBottom: 2,
+    },
+    routeAddress: {
+        fontSize: 14,
+        color: '#333',
+    },
+    routeDivider: {
+        width: 2,
+        height: 20,
+        backgroundColor: '#e0e0e0',
+        marginLeft: 8,
+        marginVertical: 8,
+    },
+    infoGrid: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 20,
+    },
+    infoItem: {
+        flex: 1,
+        alignItems: 'center',
+        padding: 10,
+        backgroundColor: '#f8f9fa',
+        borderRadius: 10,
+        marginHorizontal: 4,
+    },
+    infoIcon: {
+        fontSize: 20,
+        marginBottom: 5,
+    },
+    infoValue: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    infoLabel: {
+        fontSize: 11,
+        color: '#999',
+        marginTop: 2,
+    },
+    noSeats: {
+        color: '#e53935',
+    },
+    requestButton: {
+        backgroundColor: colors.primary,
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    requestButtonDisabled: {
+        backgroundColor: '#ccc',
+    },
+    requestButtonText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
 });
 

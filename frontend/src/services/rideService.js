@@ -1,6 +1,14 @@
 import axios from "axios";
 import { API_URL } from "../config";
 
+/**
+ * Buscar dados do passageiro pelo userId
+ */
+export const getPassengerByUserId = async (userId) => {
+    const response = await axios.get(`${API_URL}/api/passenger/${userId}`);
+    return response.data;
+};
+
 // Buscar motoristas próximos (já existia)
 export const getNearbyDrivers = async (latitude, longitude) => {
     const response = await axios.get(`${API_URL}/api/rides/nearby`, {
@@ -55,5 +63,33 @@ export const updateRide = async (rideId, updates) => {
  */
 export const cancelRide = async (rideId) => {
     const response = await axios.delete(`${API_URL}/api/rides/${rideId}`);
+    return response.data;
+};
+
+/**
+ * Buscar detalhes completos de uma carona
+ */
+export const getRideDetails = async (rideId) => {
+    const response = await axios.get(`${API_URL}/api/rides/${rideId}`);
+    return response.data;
+};
+
+/**
+ * Passageiro solicita vaga em uma carona
+ */
+export const requestRide = async (rideId, passengerId) => {
+    const response = await axios.post(`${API_URL}/api/rides/${rideId}/request`, {
+        passengerId
+    });
+    return response.data;
+};
+
+/**
+ * Cancelar solicitação de vaga (para passageiro)
+ */
+export const cancelRideRequest = async (rideId, passengerId) => {
+    const response = await axios.put(`${API_URL}/api/rides/${rideId}/passengers/${passengerId}`, {
+        status: 'cancelled'
+    });
     return response.data;
 };
