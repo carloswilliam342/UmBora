@@ -1,16 +1,26 @@
 // Script para aplicar migration da tabela passengers
-import { pool } from '../db.js';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Configurar dotenv para carregar o .env do diretório backend ANTES de importar db.js
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '..', '.env') });
+
+// Agora importar o pool DEPOIS de configurar o dotenv
+const { pool } = await import('../db.js');
 
 async function createPassengersTable() {
-    const client = await pool.connect();
+  const client = await pool.connect();
 
-    try {
-        console.log('🔄 Criando tabela passengers...');
+  try {
+    console.log('🔄 Criando tabela passengers...');
 
-        await client.query('BEGIN');
+    await client.query('BEGIN');
 
-        // Criar tabela de passageiros
-        await client.query(`
+    // Criar tabela de passageiros
+    await client.query(`
       CREATE TABLE IF NOT EXISTS passengers (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL UNIQUE,
@@ -24,44 +34,44 @@ async function createPassengersTable() {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
-        console.log('✅ Tabela passengers criada');
+    console.log('✅ Tabela passengers criada');
 
-        // Criar índice
-        await client.query(`
+    // Criar índice
+    await client.query(`
       CREATE INDEX IF NOT EXISTS idx_passengers_user ON passengers(user_id)
     `);
-        console.log('✅ Índice idx_passengers_user criado');
+    console.log('✅ Índice idx_passengers_user criado');
 
-        await client.query('COMMIT');
+    await client.query('COMMIT');
 
-        console.log('\n✅ Migration aplicada com sucesso!');
-        console.log('\n📋 Verificando estrutura da tabela passengers...');
+    console.log('\n✅ Migration aplicada com sucesso!');
+    console.log('\n📋 Verificando estrutura da tabela passengers...');
 
-        const result = await client.query(`
+    const result = await client.query(`
       SELECT column_name, data_type, is_nullable, column_default
       FROM information_schema.columns
       WHERE table_name = 'passengers'
       ORDER BY ordinal_position
     `);
 
-        console.table(result.rows);
+    console.table(result.rows);
 
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error('❌ Erro ao aplicar migration:', error);
-        throw error;
-    } finally {
-        client.release();
-        await pool.end();
-    }
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Erro ao aplicar migration:', error);
+    throw error;
+  } finally {
+    client.release();
+    await pool.end();
+  }
 }
 
 createPassengersTable()
-    .then(() => {
-        console.log('\n✅ Processo concluído!');
-        process.exit(0);
-    })
-    .catch((error) => {
-        console.error('\n❌ Falha na migration:', error);
-        process.exit(1);
-    });
+  .then(() => {
+    console.log('\n✅ Processo concluído!');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('\n❌ Falha na migration:', error);
+    process.exit(1);
+  });

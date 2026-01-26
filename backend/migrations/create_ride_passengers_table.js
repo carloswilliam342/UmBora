@@ -1,16 +1,26 @@
-// Script para aplicar migration da tabela ride_passengers
-import { pool } from '../db.js';
+// Script para aplicar migration da tabela passengers
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Configurar dotenv para carregar o .env do diretório backend ANTES de importar db.js
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '..', '.env') });
+
+// Agora importar o pool DEPOIS de configurar o dotenv
+const { pool } = await import('../db.js');
 
 async function createRidePassengersTable() {
-    const client = await pool.connect();
+  const client = await pool.connect();
 
-    try {
-        console.log('🔄 Criando tabela ride_passengers...');
+  try {
+    console.log('🔄 Criando tabela ride_passengers...');
 
-        await client.query('BEGIN');
+    await client.query('BEGIN');
 
-        // Criar tabela de passageiros por carona
-        await client.query(`
+    // Criar tabela de passageiros por carona
+    await client.query(`
       CREATE TABLE IF NOT EXISTS ride_passengers (
         id SERIAL PRIMARY KEY,
         ride_id INTEGER NOT NULL,
@@ -33,69 +43,69 @@ async function createRidePassengersTable() {
         UNIQUE(ride_id, passenger_id) -- Um passageiro só pode solicitar uma vez por carona
       )
     `);
-        console.log('✅ Tabela ride_passengers criada');
+    console.log('✅ Tabela ride_passengers criada');
 
-        // Criar índices
-        await client.query(`
+    // Criar índices
+    await client.query(`
       CREATE INDEX IF NOT EXISTS idx_ride_passengers_ride ON ride_passengers(ride_id)
     `);
-        console.log('✅ Índice idx_ride_passengers_ride criado');
+    console.log('✅ Índice idx_ride_passengers_ride criado');
 
-        await client.query(`
+    await client.query(`
       CREATE INDEX IF NOT EXISTS idx_ride_passengers_passenger ON ride_passengers(passenger_id)
     `);
-        console.log('✅ Índice idx_ride_passengers_passenger criado');
+    console.log('✅ Índice idx_ride_passengers_passenger criado');
 
-        await client.query(`
+    await client.query(`
       CREATE INDEX IF NOT EXISTS idx_ride_passengers_status ON ride_passengers(status)
     `);
-        console.log('✅ Índice idx_ride_passengers_status criado');
+    console.log('✅ Índice idx_ride_passengers_status criado');
 
-        await client.query(`
+    await client.query(`
       CREATE INDEX IF NOT EXISTS idx_ride_passengers_pending ON ride_passengers(ride_id, status) 
       WHERE status = 'pending'
     `);
-        console.log('✅ Índice idx_ride_passengers_pending criado');
+    console.log('✅ Índice idx_ride_passengers_pending criado');
 
-        // Adicionar comentários
-        await client.query(`
+    // Adicionar comentários
+    await client.query(`
       COMMENT ON TABLE ride_passengers IS 'Solicitações de vagas em caronas'
     `);
-        await client.query(`
+    await client.query(`
       COMMENT ON COLUMN ride_passengers.status IS 'Status: pending, confirmed, rejected, cancelled'
     `);
-        console.log('✅ Comentários adicionados');
+    console.log('✅ Comentários adicionados');
 
-        await client.query('COMMIT');
+    await client.query('COMMIT');
 
-        console.log('\n✅ Migration aplicada com sucesso!');
-        console.log('\n📋 Verificando estrutura da tabela ride_passengers...');
+    console.log('\n✅ Migration aplicada com sucesso!');
+    console.log('\n📋 Verificando estrutura da tabela ride_passengers...');
 
-        const result = await client.query(`
+    const result = await client.query(`
       SELECT column_name, data_type, is_nullable, column_default
       FROM information_schema.columns
       WHERE table_name = 'ride_passengers'
       ORDER BY ordinal_position
     `);
 
-        console.table(result.rows);
+    console.table(result.rows);
 
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error('❌ Erro ao aplicar migration:', error);
-        throw error;
-    } finally {
-        client.release();
-        await pool.end();
-    }
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Erro ao aplicar migration:', error);
+    throw error;
+  } finally {
+    client.release();
+    await pool.end();
+  }
 }
 
 createRidePassengersTable()
-    .then(() => {
-        console.log('\n✅ Processo concluído!');
-        process.exit(0);
-    })
-    .catch((error) => {
-        console.error('\n❌ Falha na migration:', error);
-        process.exit(1);
-    });
+  .then(() => {
+    console.log('\n✅ Processo concluído!');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('\n❌ Falha na migration:', error);
+    process.exit(1);
+  });
