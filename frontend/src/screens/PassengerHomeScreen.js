@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Alert, Modal, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Alert, Modal, ActivityIndicator, ScrollView } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
@@ -24,23 +24,49 @@ const PassengerHomeScreen = () => {
     const [passengerId, setPassengerId] = useState(null);
     const [userId, setUserId] = useState(null);
 
+    // Estados para dados da solicitação
+    const [numberOfPassengers, setNumberOfPassengers] = useState(1);
+    const [paymentMethod, setPaymentMethod] = useState(null);
+
     useEffect(() => {
         getUserLocation();
-        loadPassengerId();
+        loadUserSession();
     }, []);
 
-    const loadPassengerId = async () => {
+    const loadUserSession = async () => {
         try {
-            const userIdFromSession = await getUserSession();
-            if (userIdFromSession) {
-                setUserId(userIdFromSession);
-                const response = await getPassengerByUserId(userIdFromSession);
-                if (response.passenger) {
-                    setPassengerId(response.passenger.id);
+            // getUserSession retorna o userId diretamente como número, não um objeto
+            const userId = await getUserSession();
+            console.log('Session userId:', userId);
+
+            if (userId) {
+                setUserId(userId);
+
+                try {
+                    console.log('🔍 Chamando API para buscar passageiro com userId:', userId);
+                    const response = await getPassengerByUserId(userId);
+                    console.log('✅ Passenger response:', JSON.stringify(response, null, 2));
+
+                    // A API retorna { success: true, passenger: {...} }
+                    const passenger = response.passenger || response;
+
+                    if (passenger && passenger.id) {
+                        console.log('✅ Passenger ID encontrado:', passenger.id);
+                        setPassengerId(passenger.id);
+                    } else {
+                        console.log('❌ Passageiro não encontrado ou sem ID');
+                    }
+                } catch (passengerError) {
+                    console.log('❌ Erro ao buscar passageiro:', {
+                        message: passengerError.message,
+                        status: passengerError.response?.status,
+                        statusText: passengerError.response?.statusText,
+                        data: passengerError.response?.data
+                    });
                 }
             }
         } catch (error) {
-            console.log('Passageiro não encontrado:', error);
+            console.log('❌ Erro ao carregar sessão:', error.message);
         }
     };
 
@@ -53,85 +79,75 @@ const PassengerHomeScreen = () => {
             }
 
             let location = await Location.getCurrentPositionAsync({});
-            const { latitude, longitude } = location.coords;
+            const userCoords = {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+            };
 
-            setUserLocation({ latitude, longitude });
+            setUserLocation(userCoords);
             setRegion({
-                latitude,
-                longitude,
+                ...userCoords,
                 latitudeDelta: 0.05,
                 longitudeDelta: 0.05,
             });
 
-            // Buscar caronas disponíveis próximas
-            await fetchAvailableRides(latitude, longitude);
+            await fetchAvailableRides(userCoords.latitude, userCoords.longitude);
         } catch (error) {
             console.error('Erro ao obter localização:', error);
             setErrorMsg('Erro ao obter localização');
         }
     };
 
-    const fetchAvailableRides = async (latitude, longitude, radius = 20) => {
+    const fetchAvailableRides = async (lat, lng, searchText = null) => {
         try {
-            const response = await getAvailableRides(latitude, longitude, radius);
-            console.log('Caronas encontradas:', response.count);
-            setRides(response.rides || []);
+            // getAvailableRides(lat, lng, radius, searchText)
+            // Quando há searchText, passar radius amplo para não limitar por distância
+            const radius = searchText ? 1000 : 50; // 1000km quando busca textual, 50km sem busca
+            const response = await getAvailableRides(lat, lng, radius, searchText);
+            const ridesArray = response.rides || [];
+            setRides(ridesArray);
+
+            if (ridesArray.length > 0) {
+                Alert.alert('Caronas encontradas', `${ridesArray.length} carona(s) disponível(is) para o seu destino.`);
+
+                // Centralizar mapa nos marcadores encontrados
+                const lats = ridesArray.map(r => r.origin.latitude);
+                const lngs = ridesArray.map(r => r.origin.longitude);
+
+                const minLat = Math.min(...lats);
+                const maxLat = Math.max(...lats);
+                const minLng = Math.min(...lngs);
+                const maxLng = Math.max(...lngs);
+
+                // Calcular centro e delta para mostrar todos os marcadores
+                const centerLat = (minLat + maxLat) / 2;
+                const centerLng = (minLng + maxLng) / 2;
+                const latDelta = Math.max((maxLat - minLat) * 1.5, 0.05);
+                const lngDelta = Math.max((maxLng - minLng) * 1.5, 0.05);
+
+                setRegion({
+                    latitude: centerLat,
+                    longitude: centerLng,
+                    latitudeDelta: latDelta,
+                    longitudeDelta: lngDelta,
+                });
+            } else if (searchText) {
+                Alert.alert('Nenhuma carona', `Não encontramos caronas para "${searchText}".`);
+            }
         } catch (error) {
             console.error('Erro ao buscar caronas:', error);
             setRides([]);
         }
     };
 
-    const handleDestinationSelect = async (destination) => {
-        setSearchDestination(destination);
-
-        const addressParts = destination.displayName.split(',');
-        const searchCity = addressParts[0]?.trim() || destination.displayName;
-
+    const handleDestinationSelect = async (address) => {
+        setSearchDestination(address);
         if (userLocation) {
-            try {
-                const response = await getAvailableRides(
-                    destination.latitude,
-                    destination.longitude,
-                    50,
-                    searchCity
-                );
-
-                if (response.rides && response.rides.length > 0) {
-                    setRides(response.rides);
-
-                    const allCoordinates = response.rides.map(ride => ({
-                        latitude: ride.origin.latitude,
-                        longitude: ride.origin.longitude
-                    }));
-
-                    const lats = allCoordinates.map(c => c.latitude);
-                    const lngs = allCoordinates.map(c => c.longitude);
-
-                    const minLat = Math.min(...lats);
-                    const maxLat = Math.max(...lats);
-                    const minLng = Math.min(...lngs);
-                    const maxLng = Math.max(...lngs);
-
-                    setRegion({
-                        latitude: (minLat + maxLat) / 2,
-                        longitude: (minLng + maxLng) / 2,
-                        latitudeDelta: Math.max((maxLat - minLat) * 1.5, 0.1),
-                        longitudeDelta: Math.max((maxLng - minLng) * 1.5, 0.1),
-                    });
-
-                    Alert.alert(
-                        'Caronas Encontradas',
-                        `Encontramos ${response.rides.length} carona(s) disponível(is)!`
-                    );
-                } else {
-                    Alert.alert('Nenhuma Carona', 'Não há caronas para este destino.');
-                    setRides([]);
-                }
-            } catch (error) {
-                console.error('Erro ao buscar caronas:', error);
-                Alert.alert('Erro', 'Não foi possível buscar caronas.');
-            }
+            await fetchAvailableRides(
+                userLocation.latitude,
+                userLocation.longitude,
+                address.displayName
+            );
         }
     };
 
@@ -139,18 +155,26 @@ const PassengerHomeScreen = () => {
         setSearchDestination(null);
         if (userLocation) {
             await fetchAvailableRides(userLocation.latitude, userLocation.longitude);
-            setRegion({
-                latitude: userLocation.latitude,
-                longitude: userLocation.longitude,
-                latitudeDelta: 0.05,
-                longitudeDelta: 0.05,
-            });
         }
     };
 
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('pt-BR');
+    };
+
+    const formatTime = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    };
+
     const handleMarkerPress = (ride) => {
+        console.log('Ride selecionada:', JSON.stringify(ride, null, 2));
         setSelectedRide(ride);
         setShowRideModal(true);
+        // Resetar campos ao abrir modal
+        setNumberOfPassengers(1);
+        setPaymentMethod(null);
     };
 
     const handleRequestRide = async () => {
@@ -174,14 +198,45 @@ const PassengerHomeScreen = () => {
 
         if (!selectedRide) return;
 
+        // Validar quantidade de passageiros
+        if (numberOfPassengers < 1 || numberOfPassengers > selectedRide.availableSeats) {
+            Alert.alert(
+                'Quantidade Inválida',
+                `Por favor, selecione entre 1 e ${selectedRide.availableSeats} passageiro(s).`
+            );
+            return;
+        }
+
+        // Validar forma de pagamento
+        if (!paymentMethod) {
+            Alert.alert(
+                'Forma de Pagamento',
+                'Por favor, selecione uma forma de pagamento.'
+            );
+            return;
+        }
+
         setRequesting(true);
         try {
-            const response = await requestRide(selectedRide.id, passengerId);
+            const response = await requestRide(
+                selectedRide.id,
+                passengerId,
+                numberOfPassengers,
+                paymentMethod
+            );
 
             Alert.alert(
                 '✅ Solicitação Enviada!',
                 response.message || 'Aguarde a confirmação do motorista.',
-                [{ text: 'OK', onPress: () => setShowRideModal(false) }]
+                [{
+                    text: 'OK',
+                    onPress: () => {
+                        setShowRideModal(false);
+                        // Resetar campos
+                        setNumberOfPassengers(1);
+                        setPaymentMethod(null);
+                    }
+                }]
             );
 
             // Atualizar lista de caronas
@@ -194,26 +249,6 @@ const PassengerHomeScreen = () => {
         } finally {
             setRequesting(false);
         }
-    };
-
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    };
-
-    const formatTime = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    };
-
-    const formatFullDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('pt-BR', {
-            weekday: 'long',
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-        });
     };
 
     return (
@@ -235,22 +270,24 @@ const PassengerHomeScreen = () => {
                         />
                     )}
 
-                    {/* Marcadores das caronas disponíveis */}
-                    {rides.map((ride) => (
+                    {/* Marcadores das caronas */}
+                    {rides && rides.length > 0 && rides.map((ride) => (
                         <Marker
                             key={ride.id}
                             coordinate={{
                                 latitude: ride.origin.latitude,
                                 longitude: ride.origin.longitude,
                             }}
-                            pinColor={ride.availableSeats > 0 ? "green" : "#9E9E9E"}
+                            title={`Carona para ${ride.destination.address}`}
+                            description={`${ride.availableSeats} vaga(s) • R$ ${ride.pricePerSeat}`}
+                            pinColor="green"
                             onPress={() => handleMarkerPress(ride)}
                         />
                     ))}
                 </MapView>
             )}
 
-            {/* Card de busca flutuante */}
+            {/* Card de Busca */}
             <View style={styles.searchCard}>
                 <Text style={styles.searchTitle}>🔍 Buscar Carona</Text>
 
@@ -258,10 +295,9 @@ const PassengerHomeScreen = () => {
                     <TouchableOpacity
                         style={styles.showSearchButton}
                         onPress={() => setShowSearch(true)}
-                        activeOpacity={0.7}
                     >
                         <Text style={styles.showSearchButtonText}>
-                            Para onde você quer ir?
+                            Clique para buscar por destino
                         </Text>
                     </TouchableOpacity>
                 ) : (
@@ -290,7 +326,7 @@ const PassengerHomeScreen = () => {
 
                 <View style={styles.ridesCounter}>
                     <Text style={styles.counterText}>
-                        {rides.length} carona(s) disponível(is)
+                        {rides?.length || 0} carona(s) disponível(is)
                     </Text>
                 </View>
             </View>
@@ -304,8 +340,12 @@ const PassengerHomeScreen = () => {
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        {selectedRide && (
-                            <>
+                        {selectedRide ? (
+                            <ScrollView
+                                style={styles.modalScrollView}
+                                contentContainerStyle={styles.modalScrollContent}
+                                showsVerticalScrollIndicator={true}
+                            >
                                 {/* Header */}
                                 <View style={styles.modalHeader}>
                                     <Text style={styles.modalTitle}>🚗 Detalhes da Carona</Text>
@@ -406,27 +446,142 @@ const PassengerHomeScreen = () => {
                                     </View>
                                 </View>
 
+                                {/* Informações de Solicitações Pendentes */}
+                                {(selectedRide.pendingSeats > 0 || selectedRide.confirmedSeats > 0) && (
+                                    <View style={styles.reservationInfo}>
+                                        <Text style={styles.reservationTitle}>📊 Status das Vagas</Text>
+                                        <View style={styles.reservationDetails}>
+                                            <Text style={styles.reservationText}>
+                                                ✅ Confirmadas: {selectedRide.confirmedSeats || 0}
+                                            </Text>
+                                            <Text style={styles.reservationText}>
+                                                ⏳ Pendentes: {selectedRide.pendingSeats || 0}
+                                            </Text>
+                                            <Text style={styles.reservationText}>
+                                                🎯 Total: {selectedRide.totalSeats}
+                                            </Text>
+                                        </View>
+                                        {!selectedRide.canRequestMore && (
+                                            <View style={styles.noSlotsWarning}>
+                                                <Text style={styles.noSlotsText}>
+                                                    ⚠️ Todas as vagas já estão ocupadas ou com solicitações pendentes
+                                                </Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
+
+                                {/* Seção de Dados da Solicitação */}
+                                {selectedRide.availableSeats > 0 && (
+                                    <View style={styles.requestDataSection}>
+                                        <Text style={styles.sectionTitle}>📋 Dados da Solicitação</Text>
+
+                                        {/* Quantidade de Passageiros */}
+                                        <View style={styles.passengerCountContainer}>
+                                            <Text style={styles.fieldLabel}>Quantas pessoas?</Text>
+                                            <View style={styles.counterControls}>
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.counterButton,
+                                                        numberOfPassengers <= 1 && styles.counterButtonDisabled
+                                                    ]}
+                                                    onPress={() => setNumberOfPassengers(Math.max(1, numberOfPassengers - 1))}
+                                                    disabled={numberOfPassengers <= 1}
+                                                >
+                                                    <Text style={styles.counterButtonText}>−</Text>
+                                                </TouchableOpacity>
+                                                <Text style={styles.counterValue}>{numberOfPassengers}</Text>
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.counterButton,
+                                                        numberOfPassengers >= selectedRide.availableSeats && styles.counterButtonDisabled
+                                                    ]}
+                                                    onPress={() => setNumberOfPassengers(Math.min(selectedRide.availableSeats, numberOfPassengers + 1))}
+                                                    disabled={numberOfPassengers >= selectedRide.availableSeats}
+                                                >
+                                                    <Text style={styles.counterButtonText}>+</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+
+                                        {/* Forma de Pagamento */}
+                                        <View style={styles.paymentMethodContainer}>
+                                            <Text style={styles.fieldLabel}>Forma de Pagamento</Text>
+                                            <View style={styles.paymentOptions}>
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.paymentOption,
+                                                        paymentMethod === 'cash' && styles.paymentOptionSelected
+                                                    ]}
+                                                    onPress={() => setPaymentMethod('cash')}
+                                                >
+                                                    <Text style={styles.paymentIcon}>💵</Text>
+                                                    <Text style={[
+                                                        styles.paymentText,
+                                                        paymentMethod === 'cash' && styles.paymentTextSelected
+                                                    ]}>Dinheiro</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.paymentOption,
+                                                        paymentMethod === 'pix' && styles.paymentOptionSelected
+                                                    ]}
+                                                    onPress={() => setPaymentMethod('pix')}
+                                                >
+                                                    <Text style={styles.paymentIcon}>📱</Text>
+                                                    <Text style={[
+                                                        styles.paymentText,
+                                                        paymentMethod === 'pix' && styles.paymentTextSelected
+                                                    ]}>PIX</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.paymentOption,
+                                                        paymentMethod === 'card' && styles.paymentOptionSelected
+                                                    ]}
+                                                    onPress={() => setPaymentMethod('card')}
+                                                >
+                                                    <Text style={styles.paymentIcon}>💳</Text>
+                                                    <Text style={[
+                                                        styles.paymentText,
+                                                        paymentMethod === 'card' && styles.paymentTextSelected
+                                                    ]}>Cartão</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    </View>
+                                )}
+
                                 {/* Botão de Solicitar */}
                                 <TouchableOpacity
                                     style={[
                                         styles.requestButton,
-                                        (selectedRide.availableSeats === 0 || requesting) && styles.requestButtonDisabled
+                                        (selectedRide.canRequestMore === false || requesting) && styles.requestButtonDisabled
                                     ]}
                                     onPress={handleRequestRide}
-                                    disabled={selectedRide.availableSeats === 0 || requesting}
+                                    disabled={selectedRide.canRequestMore === false || requesting}
                                     activeOpacity={0.8}
                                 >
                                     {requesting ? (
                                         <ActivityIndicator color="#fff" />
                                     ) : (
                                         <Text style={styles.requestButtonText}>
-                                            {selectedRide.availableSeats === 0
-                                                ? '😔 Sem vagas disponíveis'
+                                            {selectedRide.canRequestMore === false
+                                                ? '😔 Vagas esgotadas'
                                                 : '✋ Solicitar Vaga'}
                                         </Text>
                                     )}
                                 </TouchableOpacity>
-                            </>
+                            </ScrollView>
+                        ) : (
+                            <View style={{ padding: 20 }}>
+                                <Text style={{ fontSize: 18, color: '#333' }}>
+                                    Carregando informações da carona...
+                                </Text>
+                                <Text style={{ fontSize: 14, color: '#666', marginTop: 10 }}>
+                                    selectedRide: {selectedRide ? 'existe' : 'null/undefined'}
+                                </Text>
+                            </View>
                         )}
                     </View>
                 </View>
@@ -531,6 +686,13 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 25,
         padding: 20,
         maxHeight: '85%',
+        minHeight: 400,
+    },
+    modalScrollView: {
+        maxHeight: '100%',
+    },
+    modalScrollContent: {
+        paddingBottom: 20,
     },
     modalHeader: {
         flexDirection: 'row',
@@ -684,6 +846,126 @@ const styles = StyleSheet.create({
     requestButtonText: {
         color: '#fff',
         fontSize: 18,
+        fontWeight: 'bold',
+    },
+    // Estilos para informações de reserva (modelo híbrido)
+    reservationInfo: {
+        backgroundColor: '#fff3e0',
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 15,
+        borderLeftWidth: 4,
+        borderLeftColor: '#ff9800',
+    },
+    reservationTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#e65100',
+        marginBottom: 8,
+    },
+    reservationDetails: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+    },
+    reservationText: {
+        fontSize: 12,
+        color: '#333',
+    },
+    noSlotsWarning: {
+        backgroundColor: '#ffebee',
+        borderRadius: 8,
+        padding: 10,
+        marginTop: 10,
+    },
+    noSlotsText: {
+        fontSize: 12,
+        color: '#c62828',
+        textAlign: 'center',
+        fontWeight: '500',
+    },
+    // Estilos para dados da solicitação
+    requestDataSection: {
+        backgroundColor: '#f8f9fa',
+        borderRadius: 12,
+        padding: 15,
+        marginBottom: 15,
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 15,
+    },
+    passengerCountContainer: {
+        marginBottom: 15,
+    },
+    fieldLabel: {
+        fontSize: 14,
+        color: '#666',
+        marginBottom: 8,
+        fontWeight: '500',
+    },
+    counterControls: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 15,
+    },
+    counterButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    counterButtonDisabled: {
+        backgroundColor: '#ccc',
+    },
+    counterButtonText: {
+        color: '#fff',
+        fontSize: 24,
+        fontWeight: 'bold',
+    },
+    counterValue: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#333',
+        minWidth: 40,
+        textAlign: 'center',
+    },
+    paymentMethodContainer: {
+        marginBottom: 5,
+    },
+    paymentOptions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 10,
+    },
+    paymentOption: {
+        flex: 1,
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        padding: 12,
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#e0e0e0',
+    },
+    paymentOptionSelected: {
+        borderColor: colors.primary,
+        backgroundColor: '#e8f5e9',
+    },
+    paymentIcon: {
+        fontSize: 24,
+        marginBottom: 5,
+    },
+    paymentText: {
+        fontSize: 12,
+        color: '#666',
+        fontWeight: '500',
+    },
+    paymentTextSelected: {
+        color: colors.primary,
         fontWeight: 'bold',
     },
 });

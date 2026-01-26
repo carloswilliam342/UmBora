@@ -9,5 +9,8 @@
     "start:frontend": "npm --prefix frontend run start",
     "start:backend": "npm --prefix backend run dev",
     "install:all": "npm install --prefix backend && npm install --prefix frontend"
+  },
+  "devDependencies": {
+    "baseline-browser-mapping": "^2.9.18"
   }
 }

@@ -77,9 +77,11 @@ export const getRideDetails = async (rideId) => {
 /**
  * Passageiro solicita vaga em uma carona
  */
-export const requestRide = async (rideId, passengerId) => {
+export const requestRide = async (rideId, passengerId, numberOfPassengers, paymentMethod) => {
     const response = await axios.post(`${API_URL}/api/rides/${rideId}/request`, {
-        passengerId
+        passengerId,
+        numberOfPassengers,
+        paymentMethod
     });
     return response.data;
 };

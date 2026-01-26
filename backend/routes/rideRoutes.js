@@ -232,7 +232,8 @@ router.get('/available', async (req, res) => {
           v.placa as vehicle_plate,
           v.cor as vehicle_color,
           d.rating as driver_rating,
-          COALESCE((SELECT COUNT(*) FROM ride_passengers rp WHERE rp.ride_id = r.id AND rp.status IN ('confirmed', 'pending')), 0) as reserved_seats,
+          COALESCE((SELECT SUM(number_of_passengers) FROM ride_passengers rp WHERE rp.ride_id = r.id AND rp.status = 'pending'), 0) as pending_seats,
+          COALESCE((SELECT SUM(number_of_passengers) FROM ride_passengers rp WHERE rp.ride_id = r.id AND rp.status = 'confirmed'), 0) as confirmed_seats,
           (
             6371 * acos(
               LEAST(1, GREATEST(-1,
@@ -255,8 +256,13 @@ router.get('/available', async (req, res) => {
         WHERE r.status = 'available'
           AND r.departure_time > NOW()
       ) AS nearby_rides
-      WHERE distance_km <= $3
-         OR ($4::TEXT IS NOT NULL AND $4::TEXT != '' AND text_match = 1)
+      WHERE 
+        CASE 
+          -- Se tiver texto de busca, mostrar APENAS caronas que batem com o texto
+          WHEN $4::TEXT IS NOT NULL AND $4::TEXT != '' THEN text_match = 1
+          -- Se não tiver texto, mostrar caronas dentro do raio
+          ELSE distance_km <= $3
+        END
       ORDER BY 
         text_match DESC,
         distance_km ASC,
@@ -269,8 +275,11 @@ router.get('/available', async (req, res) => {
         console.log('Total de caronas encontradas:', result.rows.length);
 
         const rides = result.rows.map(ride => {
-            const reservedCount = parseInt(ride.reserved_seats) || 0;
-            const actualAvailableSeats = Math.max(0, ride.available_seats - reservedCount);
+            const pendingCount = parseInt(ride.pending_seats) || 0;
+            const confirmedCount = parseInt(ride.confirmed_seats) || 0;
+            const totalReserved = pendingCount + confirmedCount;
+            const actualAvailableSeats = Math.max(0, ride.available_seats - confirmedCount);
+            const canRequestMore = totalReserved < ride.available_seats;
 
             const rideData = {
                 id: ride.id,
@@ -296,7 +305,9 @@ router.get('/available', async (req, res) => {
                 departureTime: ride.departure_time,
                 availableSeats: actualAvailableSeats,
                 totalSeats: ride.available_seats,
-                reservedSeats: reservedCount,
+                pendingSeats: pendingCount,
+                confirmedSeats: confirmedCount,
+                canRequestMore: canRequestMore,
                 pricePerSeat: parseFloat(ride.price_per_seat),
                 distance: parseFloat(ride.distance_km).toFixed(2)
             };
@@ -494,17 +505,36 @@ router.get('/:rideId', async (req, res) => {
  */
 router.post('/:rideId/request', async (req, res) => {
     const { rideId } = req.params;
-    const { passengerId } = req.body;
+    const { passengerId, numberOfPassengers, paymentMethod } = req.body;
 
+    // Validações básicas
     if (!passengerId) {
         return res.status(400).json({ message: 'passengerId é obrigatório' });
     }
 
+    if (!numberOfPassengers || numberOfPassengers < 1) {
+        return res.status(400).json({ message: 'numberOfPassengers deve ser pelo menos 1' });
+    }
+
+    if (!paymentMethod) {
+        return res.status(400).json({ message: 'paymentMethod é obrigatório' });
+    }
+
+    // Validar forma de pagamento
+    const validPaymentMethods = ['cash', 'pix', 'card'];
+    if (!validPaymentMethods.includes(paymentMethod)) {
+        return res.status(400).json({
+            message: 'paymentMethod inválido. Valores aceitos: cash, pix, card'
+        });
+    }
+
     try {
         // Verificar se a carona existe e está disponível
+        // Contar pendentes e confirmados separadamente para modelo híbrido
         const rideResult = await pool.query(
             `SELECT r.*, 
-                (SELECT COUNT(*) FROM ride_passengers WHERE ride_id = r.id AND status = 'confirmed') as confirmed_count
+                COALESCE((SELECT SUM(number_of_passengers) FROM ride_passengers WHERE ride_id = r.id AND status = 'pending'), 0) as pending_seats,
+                COALESCE((SELECT SUM(number_of_passengers) FROM ride_passengers WHERE ride_id = r.id AND status = 'confirmed'), 0) as confirmed_seats
             FROM rides r 
             WHERE r.id = $1 AND r.status = 'available' AND r.departure_time > NOW()`,
             [rideId]
@@ -515,11 +545,28 @@ router.post('/:rideId/request', async (req, res) => {
         }
 
         const ride = rideResult.rows[0];
-        const confirmedCount = parseInt(ride.confirmed_count) || 0;
-        const actualAvailableSeats = ride.available_seats - confirmedCount;
+        const pendingSeats = parseInt(ride.pending_seats) || 0;
+        const confirmedSeats = parseInt(ride.confirmed_seats) || 0;
+        const totalReserved = pendingSeats + confirmedSeats;
+        const remainingSlots = ride.available_seats - totalReserved;
 
-        if (actualAvailableSeats <= 0) {
-            return res.status(400).json({ message: 'Não há vagas disponíveis nesta carona' });
+        // Modelo híbrido: bloquear quando pendentes + confirmados >= total
+        if (remainingSlots <= 0) {
+            return res.status(400).json({
+                message: 'Todas as vagas já estão ocupadas ou com solicitações pendentes. Aguarde uma vaga ser liberada.',
+                pendingSeats,
+                confirmedSeats
+            });
+        }
+
+        // Validar se a quantidade solicitada não excede as vagas restantes
+        if (numberOfPassengers > remainingSlots) {
+            return res.status(400).json({
+                message: `Apenas ${remainingSlots} vaga(s) disponível(is) para solicitação. Você solicitou ${numberOfPassengers}.`,
+                availableForRequest: remainingSlots,
+                pendingSeats,
+                confirmedSeats
+            });
         }
 
         // Verificar se já existe solicitação deste passageiro
@@ -538,22 +585,28 @@ router.post('/:rideId/request', async (req, res) => {
             }
             // Se foi rejeitado ou cancelado, permitir nova solicitação
             await pool.query(
-                `UPDATE ride_passengers SET status = 'pending', requested_at = CURRENT_TIMESTAMP, responded_at = NULL 
+                `UPDATE ride_passengers 
+                SET status = 'pending', 
+                    requested_at = CURRENT_TIMESTAMP, 
+                    responded_at = NULL,
+                    number_of_passengers = $3,
+                    payment_method = $4
                 WHERE ride_id = $1 AND passenger_id = $2`,
-                [rideId, passengerId]
+                [rideId, passengerId, numberOfPassengers, paymentMethod]
             );
         } else {
             // Criar nova solicitação
             await pool.query(
-                `INSERT INTO ride_passengers (ride_id, passenger_id, status) VALUES ($1, $2, 'pending')`,
-                [rideId, passengerId]
+                `INSERT INTO ride_passengers (ride_id, passenger_id, status, number_of_passengers, payment_method) 
+                VALUES ($1, $2, 'pending', $3, $4)`,
+                [rideId, passengerId, numberOfPassengers, paymentMethod]
             );
         }
 
         res.status(201).json({
             success: true,
             message: 'Solicitação enviada! Aguarde a confirmação do motorista.',
-            remainingSeats: actualAvailableSeats - 1
+            remainingSeats: remainingSlots - numberOfPassengers
         });
     } catch (err) {
         console.error('Erro ao solicitar vaga:', err);
