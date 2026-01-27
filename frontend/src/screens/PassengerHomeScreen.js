@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Alert, Modal, ActivityIndicator, ScrollView } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { View, StyleSheet, Text, TouchableOpacity, Alert, Modal, ActivityIndicator, ScrollView, Platform } from 'react-native';
+// Importação condicional do mapa (só funciona em mobile)
+const MapView = Platform.OS !== 'web' ? require('react-native-maps').default : null;
+const Marker = Platform.OS !== 'web' ? require('react-native-maps').Marker : null;
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../components/StyledComponents';
@@ -253,38 +255,59 @@ const PassengerHomeScreen = () => {
 
     return (
         <View style={styles.container}>
-            {/* Mapa */}
-            {region && (
-                <MapView
-                    style={styles.map}
-                    region={region}
-                    provider="google"
-                    customMapStyle={[]}
-                >
-                    {/* Marcador do usuário */}
-                    {userLocation && (
-                        <Marker
-                            coordinate={userLocation}
-                            title="Você está aqui"
-                            pinColor="blue"
-                        />
-                    )}
+            {/* Verificar se está na web */}
+            {Platform.OS === 'web' ? (
+                <View style={styles.webNotice}>
+                    <Text style={styles.webNoticeTitle}>🚗 UmBora Mobile</Text>
+                    <Text style={styles.webNoticeText}>
+                        Para a melhor experiência com mapas e localização, use nosso app no celular!
+                    </Text>
+                    <Text style={styles.webNoticeSubtext}>
+                        Baixe pelo Expo Go ou execute com:
+                    </Text>
+                    <View style={styles.codeBlock}>
+                        <Text style={styles.codeText}>npx expo start</Text>
+                    </View>
+                    <Text style={styles.webNoticeHint}>
+                        💡 Escaneie o QR code que aparece no terminal com o app Expo Go
+                    </Text>
+                </View>
+            ) : (
+                <>
+                    {/* Mapa para Mobile */}
+                    {region && MapView && (
+                        <MapView
+                            style={styles.map}
+                            region={region}
+                            provider="google"
+                            customMapStyle={[]}
+                        >
+                            {/* Marcador do usuário */}
+                            {userLocation && Marker && (
+                                <Marker
+                                    coordinate={userLocation}
+                                    title="Você está aqui"
+                                    pinColor="blue"
+                                />
+                            )}
 
-                    {/* Marcadores das caronas */}
-                    {rides && rides.length > 0 && rides.map((ride) => (
-                        <Marker
-                            key={ride.id}
-                            coordinate={{
-                                latitude: ride.origin.latitude,
-                                longitude: ride.origin.longitude,
-                            }}
-                            title={`Carona para ${ride.destination.address}`}
-                            description={`${ride.availableSeats} vaga(s) • R$ ${ride.pricePerSeat}`}
-                            pinColor="green"
-                            onPress={() => handleMarkerPress(ride)}
-                        />
-                    ))}
-                </MapView>
+                            {/* Marcadores das caronas */}
+                            {rides && rides.length > 0 && Marker && rides.map((ride) => (
+                                <Marker
+                                    key={ride.id}
+                                    coordinate={{
+                                        latitude: ride.origin.latitude,
+                                        longitude: ride.origin.longitude,
+                                    }}
+                                    title={`Carona para ${ride.destination.address}`}
+                                    description={`${ride.availableSeats} vaga(s) • R$ ${ride.pricePerSeat}`}
+                                    pinColor="green"
+                                    onPress={() => handleMarkerPress(ride)}
+                                />
+                            ))}
+                        </MapView>
+                    )}
+                </>
             )}
 
             {/* Card de Busca */}
@@ -673,6 +696,53 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
         textAlign: 'center',
+    },
+    // Estilos para Web
+    webNotice: {
+        flex: 1,
+        backgroundColor: colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    webNoticeTitle: {
+        fontSize: 36,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 20,
+        fontStyle: 'italic',
+    },
+    webNoticeText: {
+        fontSize: 18,
+        color: '#fff',
+        textAlign: 'center',
+        marginBottom: 20,
+        lineHeight: 26,
+    },
+    webNoticeSubtext: {
+        fontSize: 16,
+        color: '#fff',
+        opacity: 0.9,
+        textAlign: 'center',
+        marginBottom: 15,
+    },
+    codeBlock: {
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        padding: 15,
+        borderRadius: 8,
+        marginBottom: 20,
+    },
+    codeText: {
+        color: '#fff',
+        fontFamily: 'monospace',
+        fontSize: 16,
+    },
+    webNoticeHint: {
+        fontSize: 14,
+        color: '#fff',
+        opacity: 0.8,
+        textAlign: 'center',
+        marginTop: 10,
     },
     // Modal Styles
     modalOverlay: {

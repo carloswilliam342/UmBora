@@ -17,6 +17,7 @@ import PhoneVerificationScreen from './src/screens/PhoneVerificationScreen.js';
 import HomeScreen from './src/screens/HomeScreen.js';
 import DriverRegistrationScreen from './src/screens/DriverRegistrationScreen.js';
 import DriverEditScreen from './src/screens/DriverEditScreen.js';
+import DriverHomeScreen from './src/screens/DriverHomeScreen.js';
 import RideCreateScreen from './src/screens/RideCreateScreen.js';
 import DriverRidesScreen from './src/screens/DriverRidesScreen.js';
 import RegistroPassageiro from './src/screens/PassengerRegistrationScreen.js';
@@ -34,8 +35,9 @@ type RootStackParamList = {
   Main: { userId: number };
   DriverSignUpFlow: { userId: number };
   DriverEdit: { userId: number };
+  DriverHome: { userId: number };
   RideCreate: { driverId: number };
-  DriverRides: { userId: number };  // NOVO
+  DriverRides: { userId: number };
   Passenger: { userId: number };
   PassengerHome: { userId: number };
   Profile: { userId: number };
@@ -161,6 +163,7 @@ export default function App() {
         />
         <Stack.Screen name="DriverSignUpFlow" component={DriverRegistrationScreen} options={{ headerShown: true, title: 'Seja um Motorista' }} />
         <Stack.Screen name="DriverEdit" component={DriverEditScreen} options={{ headerShown: true, title: 'Editar Cadastro' }} />
+        <Stack.Screen name="DriverHome" component={DriverHomeScreen} options={{ headerShown: false }} />
         <Stack.Screen name="RideCreate" component={RideCreateScreen} options={{ headerShown: true, title: 'Cadastrar Carona' }} />
         <Stack.Screen name="DriverRides" component={DriverRidesScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Passenger" component={RegistroPassageiro} />

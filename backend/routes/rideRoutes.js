@@ -615,6 +615,86 @@ router.post('/:rideId/request', async (req, res) => {
 });
 
 /**
+ * GET /api/rides/driver/:driverId/pending-requests
+ * Buscar todas as solicitações pendentes de passageiros para as caronas do motorista
+ */
+router.get('/driver/:driverId/pending-requests', async (req, res) => {
+    const { driverId } = req.params;
+    const { rideId } = req.query; // Filtro opcional por carona específica
+
+    try {
+        let query = `
+            SELECT 
+                rp.id,
+                rp.ride_id,
+                rp.passenger_id,
+                rp.number_of_passengers,
+                rp.payment_method,
+                rp.requested_at,
+                u.name as passenger_name,
+                u.phone as passenger_phone,
+                r.origin_address,
+                r.origin_latitude,
+                r.origin_longitude,
+                r.destination_address,
+                r.destination_latitude,
+                r.destination_longitude,
+                r.departure_time
+            FROM ride_passengers rp
+            INNER JOIN rides r ON rp.ride_id = r.id
+            INNER JOIN passengers p ON rp.passenger_id = p.id
+            INNER JOIN users u ON p.user_id = u.id
+            WHERE r.driver_id = $1 AND rp.status = 'pending'
+        `;
+
+        const params = [driverId];
+
+        // Filtrar por carona específica se fornecido
+        if (rideId) {
+            query += ` AND rp.ride_id = $2`;
+            params.push(rideId);
+        }
+
+        query += ` ORDER BY rp.requested_at DESC`;
+
+        const result = await pool.query(query, params);
+
+        const requests = result.rows.map(req => ({
+            id: req.id,
+            rideId: req.ride_id,
+            passengerId: req.passenger_id,
+            passengerName: req.passenger_name,
+            passengerPhone: req.passenger_phone,
+            numberOfPassengers: req.number_of_passengers,
+            paymentMethod: req.payment_method,
+            requestedAt: req.requested_at,
+            ride: {
+                origin: {
+                    address: req.origin_address,
+                    latitude: parseFloat(req.origin_latitude),
+                    longitude: parseFloat(req.origin_longitude)
+                },
+                destination: {
+                    address: req.destination_address,
+                    latitude: parseFloat(req.destination_latitude),
+                    longitude: parseFloat(req.destination_longitude)
+                },
+                departureTime: req.departure_time
+            }
+        }));
+
+        res.status(200).json({
+            success: true,
+            count: requests.length,
+            requests
+        });
+    } catch (err) {
+        console.error('Erro ao buscar solicitações pendentes:', err);
+        res.status(500).json({ message: 'Erro ao buscar solicitações', error: err.message });
+    }
+});
+
+/**
  * GET /api/rides/:rideId/passengers
  * Listar passageiros de uma carona (para o motorista)
  */

@@ -95,3 +95,36 @@ export const cancelRideRequest = async (rideId, passengerId) => {
     });
     return response.data;
 };
+
+/**
+ * Buscar solicitações pendentes do motorista
+ */
+export const getDriverPendingRequests = async (driverId, rideId = null) => {
+    const params = {};
+    if (rideId) {
+        params.rideId = rideId;
+    }
+    const response = await axios.get(`${API_URL}/api/rides/driver/${driverId}/pending-requests`, { params });
+    return response.data;
+};
+
+/**
+ * Motorista aceita solicitação de passageiro
+ */
+export const acceptRideRequest = async (rideId, passengerId) => {
+    const response = await axios.put(`${API_URL}/api/rides/${rideId}/passengers/${passengerId}`, {
+        status: 'confirmed'
+    });
+    return response.data;
+};
+
+/**
+ * Motorista rejeita solicitação de passageiro
+ */
+export const rejectRideRequest = async (rideId, passengerId) => {
+    const response = await axios.put(`${API_URL}/api/rides/${rideId}/passengers/${passengerId}`, {
+        status: 'rejected'
+    });
+    return response.data;
+};
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { View, StatusBar, Text as RNText, TouchableOpacity, ActivityIndicator } from 'react-native';
 import {
   Container,
@@ -10,6 +10,7 @@ import {
   colors
 } from '../components/StyledComponents';
 import { getDriverProfile } from '../services/driverService';
+import { getDriverPendingRequests } from '../services/rideService';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -19,10 +20,30 @@ const HomeScreen = () => {
   const [isDriver, setIsDriver] = useState(false);
   const [driverId, setDriverId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   useEffect(() => {
     checkIfDriver();
   }, []);
+
+  // Polling para atualizar contador de notificações
+  useEffect(() => {
+    if (!driverId) return;
+
+    loadPendingRequestsCount();
+    const interval = setInterval(loadPendingRequestsCount, 30000); // 30 segundos
+
+    return () => clearInterval(interval);
+  }, [driverId]);
+
+  // Recarregar ao focar na tela
+  useFocusEffect(
+    React.useCallback(() => {
+      if (driverId) {
+        loadPendingRequestsCount();
+      }
+    }, [driverId])
+  );
 
   const checkIfDriver = async () => {
     try {
@@ -34,6 +55,15 @@ const HomeScreen = () => {
       setIsDriver(false);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPendingRequestsCount = async () => {
+    try {
+      const response = await getDriverPendingRequests(driverId);
+      setPendingRequestsCount(response.count || 0);
+    } catch (error) {
+      console.error('Erro ao carregar notificações:', error);
     }
   };
 
@@ -53,6 +83,24 @@ const HomeScreen = () => {
       <View style={styles.headerContainer}>
         {/* Nome do App estilizado */}
         <RNText style={styles.logoText}>Umbora</RNText>
+
+        {/* Botão de Notificações (só para motoristas) */}
+        {isDriver && (
+          <TouchableOpacity
+            style={styles.notificationButton}
+            onPress={() => navigation.navigate('DriverHome', { userId })}
+            activeOpacity={0.7}
+          >
+            <RNText style={styles.bellIcon}>🔔</RNText>
+            {pendingRequestsCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <RNText style={styles.badgeText}>
+                  {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
+                </RNText>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* 2. Corpo Branco que "sobe" sobre o verde */}
@@ -189,6 +237,39 @@ const styles = {
   viewRidesButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  notificationButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 25,
+  },
+  bellIcon: {
+    fontSize: 28,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: '#FF5722',
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 12,
     fontWeight: 'bold',
   },
 };
