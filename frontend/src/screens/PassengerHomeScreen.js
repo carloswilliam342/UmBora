@@ -312,7 +312,15 @@ const PassengerHomeScreen = () => {
 
             {/* Card de Busca */}
             <View style={styles.searchCard}>
-                <Text style={styles.searchTitle}>🔍 Buscar Carona</Text>
+                <View style={styles.headerRow}>
+                    <Text style={styles.searchTitle}>🔍 Buscar Carona</Text>
+                    <TouchableOpacity
+                        style={styles.myRequestsButton}
+                        onPress={() => navigation.navigate('PassengerRequests', { userId })}
+                    >
+                        <Text style={styles.myRequestsButtonText}>📋 Minhas Solicitações</Text>
+                    </TouchableOpacity>
+                </View>
 
                 {!showSearch ? (
                     <TouchableOpacity
@@ -640,7 +648,23 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         color: colors.primary,
-        marginBottom: 10,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    myRequestsButton: {
+        backgroundColor: '#e3f2fd',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 15,
+    },
+    myRequestsButtonText: {
+        color: colors.primary,
+        fontSize: 12,
+        fontWeight: 'bold',
     },
     showSearchButton: {
         backgroundColor: '#f0f0f0',

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors } from '../components/StyledComponents';
-import { getDriverRides, cancelRide } from '../services/rideService';
+import { getDriverRides, cancelRide, updateRideStatus } from '../services/rideService';
 import { getDriverProfile } from '../services/driverService';
 
 const DriverRidesScreen = () => {
@@ -82,7 +82,8 @@ const DriverRidesScreen = () => {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            await cancelRide(rideId);
+                            // Usando updateRideStatus com 'cancelled' para consistência
+                            await updateRideStatus(rideId, 'cancelled');
                             Alert.alert('Sucesso', 'Carona cancelada com sucesso!');
                             await loadRides();
                         } catch (error) {
@@ -91,6 +92,29 @@ const DriverRidesScreen = () => {
                         }
                     },
                 },
+            ]
+        );
+    };
+
+    const handleUpdateStatus = (rideId, newStatus, actionName) => {
+        Alert.alert(
+            actionName,
+            `Deseja marcar esta carona como "${newStatus === 'in_progress' ? 'Em Andamento' : 'Concluída'}"?`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Confirmar',
+                    onPress: async () => {
+                        try {
+                            await updateRideStatus(rideId, newStatus);
+                            Alert.alert('Sucesso', `Carona marcada como ${newStatus === 'in_progress' ? 'iniciada' : 'concluída'}!`);
+                            await loadRides();
+                        } catch (error) {
+                            console.error(`Erro ao atualizar para ${newStatus}:`, error);
+                            Alert.alert('Erro', `Não foi possível atualizar o status da carona.`);
+                        }
+                    }
+                }
             ]
         );
     };
@@ -197,17 +221,33 @@ const DriverRidesScreen = () => {
             </View>
 
             {/* Botões de Ação */}
-            {item.status === 'available' && (
-                <View style={styles.actionsContainer}>
+            <View style={styles.actionsContainer}>
+                {item.status === 'available' && (
+                    <>
+                        <TouchableOpacity
+                            style={[styles.actionButton, styles.startButton]}
+                            onPress={() => handleUpdateStatus(item.id, 'in_progress', 'Iniciar Carona')}
+                        >
+                            <Text style={styles.startButtonText}>▶ Iniciar</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.actionButton, styles.cancelButton]}
+                            onPress={() => handleCancelRide(item.id)}
+                        >
+                            <Text style={styles.cancelButtonText}>Cancelar</Text>
+                        </TouchableOpacity>
+                    </>
+                )}
+
+                {item.status === 'in_progress' && (
                     <TouchableOpacity
-                        style={[styles.actionButton, styles.cancelButton]}
-                        onPress={() => handleCancelRide(item.id)}
-                        activeOpacity={0.7}
+                        style={[styles.actionButton, styles.completeButton]}
+                        onPress={() => handleUpdateStatus(item.id, 'completed', 'Finalizar Carona')}
                     >
-                        <Text style={styles.cancelButtonText}>Cancelar</Text>
+                        <Text style={styles.completeButtonText}>🏁 Finalizar</Text>
                     </TouchableOpacity>
-                </View>
-            )}
+                )}
+            </View>
         </View>
     );
 
@@ -380,6 +420,25 @@ const styles = StyleSheet.create({
     },
     cancelButtonText: {
         color: '#F44336',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    startButton: {
+        backgroundColor: '#4CAF50',
+        marginRight: 10,
+    },
+    startButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    completeButton: {
+        backgroundColor: '#2196F3',
+        width: '100%',
+        alignItems: 'center',
+    },
+    completeButtonText: {
+        color: '#fff',
         fontSize: 14,
         fontWeight: 'bold',
     },

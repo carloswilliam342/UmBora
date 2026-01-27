@@ -22,6 +22,7 @@ import RideCreateScreen from './src/screens/RideCreateScreen.js';
 import DriverRidesScreen from './src/screens/DriverRidesScreen.js';
 import RegistroPassageiro from './src/screens/PassengerRegistrationScreen.js';
 import PassengerHomeScreen from './src/screens/PassengerHomeScreen.js';
+import PassengerRequestsScreen from './src/screens/PassengerRequestsScreen.js';
 import SettingsScreen from './src/screens/SettingsScreen.js';
 import ProfileScreen from './src/screens/ProfileScreen.js';
 
@@ -40,7 +41,9 @@ type RootStackParamList = {
   DriverRides: { userId: number };
   Passenger: { userId: number };
   PassengerHome: { userId: number };
+  PassengerRequests: { userId: number };
   Profile: { userId: number };
+  Settings: undefined;
 };
 
 // 2. Criar os dois tipos de navegador
@@ -168,6 +171,8 @@ export default function App() {
         <Stack.Screen name="DriverRides" component={DriverRidesScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Passenger" component={RegistroPassageiro} />
         <Stack.Screen name="PassengerHome" component={PassengerHomeScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="PassengerRequests" component={PassengerRequestsScreen} options={{ headerShown: true, title: 'Minhas Solicitações' }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Configurações' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

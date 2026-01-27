@@ -789,5 +789,195 @@ router.put('/:rideId/passengers/:passengerId', async (req, res) => {
     }
 });
 
+/**
+ * GET /api/passengers/:passengerId/requests
+ * Busca todas as solicitações de caronas de um passageiro
+ */
+router.get('/passengers/:passengerId/requests', async (req, res) => {
+    const { passengerId } = req.params;
+
+    try {
+        const query = `
+            SELECT 
+                rp.id,
+                rp.ride_id,
+                rp.passenger_id,
+                rp.status,
+                rp.number_of_passengers,
+                rp.payment_method,
+                rp.requested_at,
+                rp.responded_at,
+                r.origin_address,
+                r.origin_latitude,
+                r.origin_longitude,
+                r.destination_address,
+                r.destination_latitude,
+                r.destination_longitude,
+                r.departure_time,
+                r.price_per_seat,
+                r.status as ride_status,
+                d.id as driver_id,
+                u.name as driver_name,
+                u.phone as driver_phone
+            FROM ride_passengers rp
+            INNER JOIN rides r ON rp.ride_id = r.id
+            INNER JOIN drivers d ON r.driver_id = d.id
+            INNER JOIN users u ON d.user_id = u.id
+            WHERE rp.passenger_id = $1
+            ORDER BY rp.requested_at DESC
+        `;
+
+        const result = await pool.query(query, [passengerId]);
+
+        const requests = result.rows.map(req => ({
+            id: req.id,
+            rideId: req.ride_id,
+            status: req.status,
+            numberOfPassengers: req.number_of_passengers,
+            paymentMethod: req.payment_method,
+            requestedAt: req.requested_at,
+            respondedAt: req.responded_at,
+            ride: {
+                origin: {
+                    address: req.origin_address,
+                    latitude: parseFloat(req.origin_latitude),
+                    longitude: parseFloat(req.origin_longitude)
+                },
+                destination: {
+                    address: req.destination_address,
+                    latitude: parseFloat(req.destination_latitude),
+                    longitude: parseFloat(req.destination_longitude)
+                },
+                departureTime: req.departure_time,
+                pricePerSeat: parseFloat(req.price_per_seat),
+                status: req.ride_status
+            },
+            driver: {
+                id: req.driver_id,
+                name: req.driver_name,
+                phone: req.driver_phone
+            }
+        }));
+
+        res.status(200).json({
+            success: true,
+            count: requests.length,
+            requests
+        });
+    } catch (err) {
+        console.error('Erro ao buscar solicitações do passageiro:', err);
+        res.status(500).json({ message: 'Erro ao buscar solicitações', error: err.message });
+    }
+});
+
+/**
+ * DELETE /api/rides/:rideId/requests/:passengerId
+ * Passageiro cancela sua solicitação de carona
+ */
+router.delete('/:rideId/requests/:passengerId', async (req, res) => {
+    const { rideId, passengerId } = req.params;
+
+    try {
+        // Verificar se a solicitação existe
+        const checkResult = await pool.query(
+            `SELECT * FROM ride_passengers WHERE ride_id = $1 AND passenger_id = $2`,
+            [rideId, passengerId]
+        );
+
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Solicitação não encontrada' });
+        }
+
+        const request = checkResult.rows[0];
+
+        // Só pode cancelar se estiver pendente
+        if (request.status !== 'pending') {
+            return res.status(400).json({
+                message: `Não é possível cancelar uma solicitação ${request.status === 'confirmed' ? 'confirmada' : 'já rejeitada'}`
+            });
+        }
+
+        // Atualizar status para 'cancelled'
+        const result = await pool.query(
+            `UPDATE ride_passengers 
+            SET status = 'cancelled', responded_at = CURRENT_TIMESTAMP 
+            WHERE ride_id = $1 AND passenger_id = $2
+            RETURNING *`,
+            [rideId, passengerId]
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Solicitação cancelada com sucesso',
+            request: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Erro ao cancelar solicitação:', err);
+        res.status(500).json({ message: 'Erro ao cancelar solicitação', error: err.message });
+    }
+});
+
+/**
+ * PUT /api/rides/:rideId/status
+ * Motorista atualiza o status da carona (in_progress, completed, cancelled)
+ */
+router.put('/:rideId/status', async (req, res) => {
+    const { rideId } = req.params;
+    const { status } = req.body;
+
+    // Validar status permitidos
+    const validStatuses = ['available', 'in_progress', 'completed', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+            message: `Status inválido. Use: ${validStatuses.join(', ')}`
+        });
+    }
+
+    try {
+        // Verificar se a carona existe
+        const rideCheck = await pool.query(
+            `SELECT * FROM rides WHERE id = $1`,
+            [rideId]
+        );
+
+        if (rideCheck.rows.length === 0) {
+            return res.status(404).json({ message: 'Carona não encontrada' });
+        }
+
+        const currentRide = rideCheck.rows[0];
+
+        // Validações de transição de estado
+        if (status === 'in_progress' && currentRide.status !== 'available') {
+            return res.status(400).json({
+                message: 'Só é possível iniciar caronas com status "available"'
+            });
+        }
+
+        if (status === 'completed' && currentRide.status !== 'in_progress') {
+            return res.status(400).json({
+                message: 'Só é possível finalizar caronas que estão "in_progress"'
+            });
+        }
+
+        // Atualizar status
+        const result = await pool.query(
+            `UPDATE rides 
+            SET status = $1, updated_at = CURRENT_TIMESTAMP 
+            WHERE id = $2
+            RETURNING *`,
+            [status, rideId]
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `Carona ${status === 'in_progress' ? 'iniciada' : status === 'completed' ? 'finalizada' : 'atualizada'} com sucesso`,
+            ride: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Erro ao atualizar status da carona:', err);
+        res.status(500).json({ message: 'Erro ao atualizar status', error: err.message });
+    }
+});
+
 export default router;
 

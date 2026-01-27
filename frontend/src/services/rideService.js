@@ -86,15 +86,7 @@ export const requestRide = async (rideId, passengerId, numberOfPassengers, payme
     return response.data;
 };
 
-/**
- * Cancelar solicitação de vaga (para passageiro)
- */
-export const cancelRideRequest = async (rideId, passengerId) => {
-    const response = await axios.put(`${API_URL}/api/rides/${rideId}/passengers/${passengerId}`, {
-        status: 'cancelled'
-    });
-    return response.data;
-};
+
 
 /**
  * Buscar solicitações pendentes do motorista
@@ -128,3 +120,28 @@ export const rejectRideRequest = async (rideId, passengerId) => {
     return response.data;
 };
 
+/**
+ * Buscar todas as solicitações de um passageiro
+ */
+export const getPassengerRequests = async (passengerId) => {
+    const response = await axios.get(`${API_URL}/api/rides/passengers/${passengerId}/requests`);
+    return response.data;
+};
+
+/**
+ * Passageiro cancela sua solicitação
+ */
+export const cancelRideRequest = async (rideId, passengerId) => {
+    const response = await axios.delete(`${API_URL}/api/rides/${rideId}/requests/${passengerId}`);
+    return response.data;
+};
+
+/**
+ * Atualizar status da carona (motorista)
+ */
+export const updateRideStatus = async (rideId, status) => {
+    const response = await axios.put(`${API_URL}/api/rides/${rideId}/status`, {
+        status
+    });
+    return response.data;
+};
