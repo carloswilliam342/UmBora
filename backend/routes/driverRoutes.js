@@ -5,7 +5,7 @@ const router = express.Router();
 
 // ROTA: POST /api/drivers/apply
 // Cadastrar novo motorista com localização e disponibilidade
-router.post('/apply', async (req, res) => {
+export const applyDriverHandler = async (req, res) => {
   const {
     userId,
     cnh,
@@ -82,7 +82,7 @@ router.post('/apply', async (req, res) => {
   } finally {
     client.release();
   }
-});
+};
 
 // ROTA: GET /api/drivers/profile/:userId
 // Buscar dados do motorista por userId
@@ -256,5 +256,7 @@ router.put('/profile/:userId', async (req, res) => {
     client.release();
   }
 });
+
+router.post('/apply', applyDriverHandler);
 
 export default router;
