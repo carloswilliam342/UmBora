@@ -156,7 +156,7 @@ export const getDriverProfile = async (req, res) => {
 
 // ROTA: PUT /api/drivers/profile/:userId
 // Atualizar dados do motorista
-router.put('/profile/:userId', async (req, res) => {
+export const updateDriverProfile = async (req, res) => {
   const { userId } = req.params;
   const {
     current_latitude,
@@ -255,9 +255,10 @@ router.put('/profile/:userId', async (req, res) => {
   } finally {
     client.release();
   }
-});
+};
 
 router.post('/apply', applyDriverHandler);
 router.get('/profile/:userId', getDriverProfile);
+router.put('/profile/:userId', updateDriverProfile);
 
 export default router;
