@@ -86,7 +86,7 @@ export const applyDriverHandler = async (req, res) => {
 
 // ROTA: GET /api/drivers/profile/:userId
 // Buscar dados do motorista por userId
-router.get('/profile/:userId', async (req, res) => {
+export const getDriverProfile = async (req, res) => {
   const { userId } = req.params;
 
   try {
@@ -152,7 +152,7 @@ router.get('/profile/:userId', async (req, res) => {
     console.error('Erro ao buscar perfil do motorista:', err);
     res.status(500).json({ message: 'Erro interno do servidor.' });
   }
-});
+};
 
 // ROTA: PUT /api/drivers/profile/:userId
 // Atualizar dados do motorista
@@ -258,5 +258,6 @@ router.put('/profile/:userId', async (req, res) => {
 });
 
 router.post('/apply', applyDriverHandler);
+router.get('/profile/:userId', getDriverProfile);
 
 export default router;

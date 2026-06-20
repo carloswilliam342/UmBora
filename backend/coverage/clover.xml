@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1781987609735" clover="3.2.0">
-  <project timestamp="1781987609735" name="All files">
-    <metrics statements="87" coveredstatements="30" conditionals="49" coveredconditionals="20" methods="3" coveredmethods="1" elements="139" coveredelements="51" complexity="0" loc="87" ncloc="87" packages="1" files="1" classes="1"/>
+<coverage generated="1781988242956" clover="3.2.0">
+  <project timestamp="1781988242956" name="All files">
+    <metrics statements="88" coveredstatements="40" conditionals="49" coveredconditionals="26" methods="3" coveredmethods="2" elements="140" coveredelements="68" complexity="0" loc="88" ncloc="88" packages="1" files="1" classes="1"/>
     <file name="driverRoutes.js" path="C:\Users\Yure Pires\Documents\UmBora\backend\routes\driverRoutes.js">
-      <metrics statements="87" coveredstatements="30" conditionals="49" coveredconditionals="20" methods="3" coveredmethods="1"/>
-      <line num="4" count="1" type="stmt"/>
-      <line num="8" count="1" type="stmt"/>
+      <metrics statements="88" coveredstatements="40" conditionals="49" coveredconditionals="26" methods="3" coveredmethods="2"/>
+      <line num="4" count="2" type="stmt"/>
+      <line num="8" count="2" type="stmt"/>
       <line num="18" count="7" type="stmt"/>
       <line num="20" count="7" type="cond" truecount="7" falsecount="0"/>
       <line num="21" count="1" type="stmt"/>
@@ -31,17 +31,17 @@
       <line num="80" count="1" type="stmt"/>
       <line num="81" count="1" type="stmt"/>
       <line num="83" count="6" type="stmt"/>
-      <line num="89" count="1" type="stmt"/>
-      <line num="90" count="0" type="stmt"/>
-      <line num="92" count="0" type="stmt"/>
-      <line num="93" count="0" type="stmt"/>
-      <line num="117" count="0" type="cond" truecount="0" falsecount="2"/>
-      <line num="118" count="0" type="stmt"/>
-      <line num="124" count="0" type="stmt"/>
-      <line num="126" count="0" type="stmt"/>
-      <line num="152" count="0" type="stmt"/>
-      <line num="153" count="0" type="stmt"/>
-      <line num="159" count="1" type="stmt"/>
+      <line num="89" count="2" type="stmt"/>
+      <line num="90" count="4" type="stmt"/>
+      <line num="92" count="4" type="stmt"/>
+      <line num="93" count="4" type="stmt"/>
+      <line num="117" count="3" type="cond" truecount="2" falsecount="0"/>
+      <line num="118" count="1" type="stmt"/>
+      <line num="124" count="2" type="stmt"/>
+      <line num="126" count="2" type="stmt"/>
+      <line num="152" count="1" type="stmt"/>
+      <line num="153" count="1" type="stmt"/>
+      <line num="159" count="2" type="stmt"/>
       <line num="160" count="0" type="stmt"/>
       <line num="168" count="0" type="stmt"/>
       <line num="170" count="0" type="stmt"/>
@@ -90,7 +90,8 @@
       <line num="253" count="0" type="stmt"/>
       <line num="254" count="0" type="stmt"/>
       <line num="256" count="0" type="stmt"/>
-      <line num="260" count="1" type="stmt"/>
+      <line num="260" count="2" type="stmt"/>
+      <line num="261" count="2" type="stmt"/>
     </file>
   </project>
 </coverage>
