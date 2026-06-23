@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1781989403983" clover="3.2.0">
-  <project timestamp="1781989403983" name="All files">
-    <metrics statements="89" coveredstatements="89" conditionals="49" coveredconditionals="49" methods="3" coveredmethods="3" elements="141" coveredelements="141" complexity="0" loc="89" ncloc="89" packages="1" files="1" classes="1"/>
+<coverage generated="1782221446101" clover="3.2.0">
+  <project timestamp="1782221446101" name="All files">
+    <metrics statements="112" coveredstatements="112" conditionals="57" coveredconditionals="57" methods="5" coveredmethods="5" elements="174" coveredelements="174" complexity="0" loc="112" ncloc="112" packages="1" files="2" classes="2"/>
     <file name="driverRoutes.js" path="C:\Users\Yure Pires\Documents\UmBora\backend\routes\driverRoutes.js">
       <metrics statements="89" coveredstatements="89" conditionals="49" coveredconditionals="49" methods="3" coveredmethods="3"/>
       <line num="4" count="3" type="stmt"/>
@@ -93,6 +93,32 @@
       <line num="260" count="3" type="stmt"/>
       <line num="261" count="3" type="stmt"/>
       <line num="262" count="3" type="stmt"/>
+    </file>
+    <file name="passengerRoutes.js" path="C:\Users\Yure Pires\Documents\UmBora\backend\routes\passengerRoutes.js">
+      <metrics statements="23" coveredstatements="23" conditionals="8" coveredconditionals="8" methods="2" coveredmethods="2"/>
+      <line num="4" count="2" type="stmt"/>
+      <line num="6" count="2" type="stmt"/>
+      <line num="7" count="4" type="stmt"/>
+      <line num="9" count="4" type="cond" truecount="4" falsecount="0"/>
+      <line num="10" count="1" type="stmt"/>
+      <line num="13" count="3" type="stmt"/>
+      <line num="14" count="3" type="stmt"/>
+      <line num="21" count="1" type="stmt"/>
+      <line num="23" count="2" type="cond" truecount="2" falsecount="0"/>
+      <line num="24" count="1" type="stmt"/>
+      <line num="26" count="1" type="stmt"/>
+      <line num="27" count="1" type="stmt"/>
+      <line num="31" count="2" type="stmt"/>
+      <line num="32" count="3" type="stmt"/>
+      <line num="34" count="3" type="stmt"/>
+      <line num="35" count="3" type="stmt"/>
+      <line num="40" count="2" type="cond" truecount="2" falsecount="0"/>
+      <line num="41" count="1" type="stmt"/>
+      <line num="44" count="1" type="stmt"/>
+      <line num="49" count="1" type="stmt"/>
+      <line num="50" count="1" type="stmt"/>
+      <line num="54" count="2" type="stmt"/>
+      <line num="55" count="2" type="stmt"/>
     </file>
   </project>
 </coverage>

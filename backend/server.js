@@ -9,6 +9,7 @@ import helmet from 'helmet';
 
 // Importa as rotas de motorista que criamos
 import driverRoutes from './routes/driverRoutes.js';
+import passengerRoutes from './routes/passengerRoutes.js';
 import rideRoutes from './routes/rideRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 
@@ -23,6 +24,8 @@ app.use(express.json());
 
 // Diz ao Express para usar o arquivo de rotas para qualquer URL que comece com /api/drivers
 app.use('/api/drivers', driverRoutes);
+// Rotas para passageiros (criação, busca de dados)
+app.use('/api/passenger', passengerRoutes);
 // Rotas para corridas (buscar motoristas próximos, etc)
 app.use('/api/rides', rideRoutes);
 // Rotas para usuários (perfil, atualização de dados)
@@ -97,61 +100,6 @@ app.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Erro no login:', err);
-    res.status(500).json({ message: 'Erro interno do servidor.' });
-  }
-});
-
-// A rota /api/driver foi movida para /routes/driverRoutes.js e agora é acessada via /api/drivers/apply
-// A rota /api/passenger pode ser movida para seu próprio arquivo também (ex: /routes/passengerRoutes.js)
-
-app.post('/api/passenger', async (req, res) => {
-  // 1. Recebendo todos os dados do corpo da requisição
-  const { userId, cpf, cep, rua, bairro, numero } = req.body;
-
-  if (!userId || !cpf) {
-    return res.status(400).json({ message: 'ID do usuário e CPF são obrigatórios.' });
-  }
-
-  try {
-    // 2. Atualizamos o INSERT para incluir os campos de endereço
-    await pool.query(
-      `INSERT INTO passengers 
-       (user_id, cpf, cep, endereco_rua, endereco_bairro, endereco_numero) 
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [userId, cpf, cep, rua, bairro, numero]
-    );
-
-    res.status(201).json({ message: 'Passageiro cadastrado com sucesso!' });
-
-  } catch (err) {
-    if (err.code === '23505') {
-      return res.status(409).json({ message: 'CPF ou Usuário já cadastrados.' });
-    }
-    console.error('Erro no cadastro de passageiro:', err);
-    res.status(500).json({ message: 'Erro interno do servidor.' });
-  }
-});
-
-// Buscar dados do passageiro pelo userId
-app.get('/api/passenger/:userId', async (req, res) => {
-  const { userId } = req.params;
-
-  try {
-    const result = await pool.query(
-      'SELECT id, user_id, cpf FROM passengers WHERE user_id = $1',
-      [userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Passageiro não encontrado.' });
-    }
-
-    res.status(200).json({
-      success: true,
-      passenger: result.rows[0]
-    });
-  } catch (err) {
-    console.error('Erro ao buscar passageiro:', err);
     res.status(500).json({ message: 'Erro interno do servidor.' });
   }
 });
