@@ -1,7 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1782221446101" clover="3.2.0">
-  <project timestamp="1782221446101" name="All files">
-    <metrics statements="112" coveredstatements="112" conditionals="57" coveredconditionals="57" methods="5" coveredmethods="5" elements="174" coveredelements="174" complexity="0" loc="112" ncloc="112" packages="1" files="2" classes="2"/>
+<coverage generated="1782222991727" clover="3.2.0">
+  <project timestamp="1782222991727" name="All files">
+    <metrics statements="143" coveredstatements="143" conditionals="72" coveredconditionals="72" methods="7" coveredmethods="7" elements="222" coveredelements="222" complexity="0" loc="143" ncloc="143" packages="1" files="3" classes="3"/>
+    <file name="authRoutes.js" path="C:\Users\Yure Pires\Documents\UmBora\backend\routes\authRoutes.js">
+      <metrics statements="31" coveredstatements="31" conditionals="15" coveredconditionals="15" methods="2" coveredmethods="2"/>
+      <line num="5" count="1" type="stmt"/>
+      <line num="6" count="1" type="stmt"/>
+      <line num="8" count="1" type="stmt"/>
+      <line num="9" count="4" type="stmt"/>
+      <line num="11" count="4" type="cond" truecount="5" falsecount="0"/>
+      <line num="12" count="1" type="stmt"/>
+      <line num="14" count="3" type="stmt"/>
+      <line num="15" count="3" type="stmt"/>
+      <line num="16" count="2" type="stmt"/>
+      <line num="21" count="1" type="stmt"/>
+      <line num="26" count="2" type="cond" truecount="2" falsecount="0"/>
+      <line num="27" count="1" type="stmt"/>
+      <line num="29" count="1" type="stmt"/>
+      <line num="30" count="1" type="stmt"/>
+      <line num="34" count="1" type="stmt"/>
+      <line num="35" count="5" type="stmt"/>
+      <line num="37" count="5" type="cond" truecount="4" falsecount="0"/>
+      <line num="38" count="1" type="stmt"/>
+      <line num="41" count="4" type="stmt"/>
+      <line num="42" count="4" type="stmt"/>
+      <line num="47" count="3" type="cond" truecount="2" falsecount="0"/>
+      <line num="48" count="1" type="stmt"/>
+      <line num="51" count="2" type="stmt"/>
+      <line num="53" count="2" type="stmt"/>
+      <line num="55" count="2" type="cond" truecount="2" falsecount="0"/>
+      <line num="56" count="1" type="stmt"/>
+      <line num="59" count="1" type="stmt"/>
+      <line num="64" count="1" type="stmt"/>
+      <line num="65" count="1" type="stmt"/>
+      <line num="69" count="1" type="stmt"/>
+      <line num="70" count="1" type="stmt"/>
+    </file>
     <file name="driverRoutes.js" path="C:\Users\Yure Pires\Documents\UmBora\backend\routes\driverRoutes.js">
       <metrics statements="89" coveredstatements="89" conditionals="49" coveredconditionals="49" methods="3" coveredmethods="3"/>
       <line num="4" count="3" type="stmt"/>
