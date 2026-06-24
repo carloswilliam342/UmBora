@@ -8,7 +8,7 @@ const router = express.Router();
  * Busca motoristas disponíveis próximos à localização do passageiro
  * Query params: lat (latitude), lng (longitude), radius (raio em km, opcional, padrão 5km)
  */
-router.get('/nearby', async (req, res) => {
+export const getDriversNearbyHandler = async (req, res) => {
     const { lat, lng, radius = 5 } = req.query;
 
     if (!lat || !lng) {
@@ -90,13 +90,13 @@ router.get('/nearby', async (req, res) => {
             error: err.message
         });
     }
-});
+};
 
 /**
  * POST /api/rides/create
  * Cadastrar nova carona
  */
-router.post('/create', async (req, res) => {
+export const createRideHandler = async (req, res) => {
     const {
         driverId,
         origin,
@@ -148,13 +148,13 @@ router.post('/create', async (req, res) => {
         console.error('Erro ao cadastrar carona:', err);
         res.status(500).json({ message: 'Erro ao cadastrar carona', error: err.message });
     }
-});
+};
 
 /**
  * GET /api/rides/driver/:driverId
  * Listar caronas de um motorista
  */
-router.get('/driver/:driverId', async (req, res) => {
+export const getDriverRidesHandler = async (req, res) => {
     const { driverId } = req.params;
 
     try {
@@ -198,13 +198,13 @@ router.get('/driver/:driverId', async (req, res) => {
         console.error('Erro ao listar caronas:', err);
         res.status(500).json({ message: 'Erro ao listar caronas', error: err.message });
     }
-});
+};
 
 /**
  * GET /api/rides/available
  * Buscar caronas disponíveis com busca inteligente (coordenadas + texto)
  */
-router.get('/available', async (req, res) => {
+export const getAvailableRidesHandler = async (req, res) => {
     const { lat, lng, radius = 50, searchText = '' } = req.query; // String vazia como padrão
 
     if (!lat || !lng) {
@@ -334,13 +334,13 @@ router.get('/available', async (req, res) => {
         console.error('Erro ao buscar caronas disponíveis:', err);
         res.status(500).json({ message: 'Erro ao buscar caronas', error: err.message });
     }
-});
+};
 
 /**
  * PUT /api/rides/:rideId
  * Atualizar carona
  */
-router.put('/:rideId', async (req, res) => {
+export const updateRideHandler = async (req, res) => {
     const { rideId } = req.params;
     const updates = req.body;
 
@@ -394,13 +394,13 @@ router.put('/:rideId', async (req, res) => {
         console.error('Erro ao atualizar carona:', err);
         res.status(500).json({ message: 'Erro ao atualizar carona', error: err.message });
     }
-});
+};
 
 /**
  * DELETE /api/rides/:rideId
  * Cancelar carona
  */
-router.delete('/:rideId', async (req, res) => {
+export const cancelRideHandler = async (req, res) => {
     const { rideId } = req.params;
 
     try {
@@ -414,13 +414,13 @@ router.delete('/:rideId', async (req, res) => {
         console.error('Erro ao cancelar carona:', err);
         res.status(500).json({ message: 'Erro ao cancelar carona', error: err.message });
     }
-});
+};
 
 /**
  * GET /api/rides/:rideId
  * Buscar detalhes completos de uma carona
  */
-router.get('/:rideId', async (req, res) => {
+export const getRideDetailsHandler = async (req, res) => {
     const { rideId } = req.params;
 
     try {
@@ -497,13 +497,13 @@ router.get('/:rideId', async (req, res) => {
         console.error('Erro ao buscar detalhes da carona:', err);
         res.status(500).json({ message: 'Erro ao buscar carona', error: err.message });
     }
-});
+};
 
 /**
  * POST /api/rides/:rideId/request
  * Passageiro solicita vaga em uma carona
  */
-router.post('/:rideId/request', async (req, res) => {
+export const requestRideHandler = async (req, res) => {
     const { rideId } = req.params;
     const { passengerId, numberOfPassengers, paymentMethod } = req.body;
 
@@ -612,13 +612,13 @@ router.post('/:rideId/request', async (req, res) => {
         console.error('Erro ao solicitar vaga:', err);
         res.status(500).json({ message: 'Erro ao solicitar vaga', error: err.message });
     }
-});
+};
 
 /**
  * GET /api/rides/driver/:driverId/pending-requests
  * Buscar todas as solicitações pendentes de passageiros para as caronas do motorista
  */
-router.get('/driver/:driverId/pending-requests', async (req, res) => {
+export const getPendingRequestsHandler = async (req, res) => {
     const { driverId } = req.params;
     const { rideId } = req.query; // Filtro opcional por carona específica
 
@@ -692,13 +692,13 @@ router.get('/driver/:driverId/pending-requests', async (req, res) => {
         console.error('Erro ao buscar solicitações pendentes:', err);
         res.status(500).json({ message: 'Erro ao buscar solicitações', error: err.message });
     }
-});
+};
 
 /**
  * GET /api/rides/:rideId/passengers
  * Listar passageiros de uma carona (para o motorista)
  */
-router.get('/:rideId/passengers', async (req, res) => {
+export const getPassengersHandler = async (req, res) => {
     const { rideId } = req.params;
 
     try {
@@ -730,13 +730,13 @@ router.get('/:rideId/passengers', async (req, res) => {
         console.error('Erro ao listar passageiros:', err);
         res.status(500).json({ message: 'Erro ao listar passageiros', error: err.message });
     }
-});
+};
 
 /**
  * PUT /api/rides/:rideId/passengers/:passengerId
  * Motorista responde solicitação (confirma ou rejeita)
  */
-router.put('/:rideId/passengers/:passengerId', async (req, res) => {
+export const responseRideHandler = async (req, res) => {
     const { rideId, passengerId } = req.params;
     const { status } = req.body; // 'confirmed' ou 'rejected'
 
@@ -787,13 +787,13 @@ router.put('/:rideId/passengers/:passengerId', async (req, res) => {
         console.error('Erro ao atualizar status do passageiro:', err);
         res.status(500).json({ message: 'Erro ao processar solicitação', error: err.message });
     }
-});
+};
 
 /**
  * GET /api/passengers/:passengerId/requests
  * Busca todas as solicitações de caronas de um passageiro
  */
-router.get('/passengers/:passengerId/requests', async (req, res) => {
+export const getPassengerRequestsHandler = async (req, res) => {
     const { passengerId } = req.params;
 
     try {
@@ -868,13 +868,13 @@ router.get('/passengers/:passengerId/requests', async (req, res) => {
         console.error('Erro ao buscar solicitações do passageiro:', err);
         res.status(500).json({ message: 'Erro ao buscar solicitações', error: err.message });
     }
-});
+};
 
 /**
  * DELETE /api/rides/:rideId/requests/:passengerId
  * Passageiro cancela sua solicitação de carona
  */
-router.delete('/:rideId/requests/:passengerId', async (req, res) => {
+export const cancelRideRequestHandler = async (req, res) => {
     const { rideId, passengerId } = req.params;
 
     try {
@@ -915,13 +915,13 @@ router.delete('/:rideId/requests/:passengerId', async (req, res) => {
         console.error('Erro ao cancelar solicitação:', err);
         res.status(500).json({ message: 'Erro ao cancelar solicitação', error: err.message });
     }
-});
+};
 
 /**
  * PUT /api/rides/:rideId/status
  * Motorista atualiza o status da carona (in_progress, completed, cancelled)
  */
-router.put('/:rideId/status', async (req, res) => {
+export const updateRideStatusHandler = async (req, res) => {
     const { rideId } = req.params;
     const { status } = req.body;
 
@@ -977,7 +977,21 @@ router.put('/:rideId/status', async (req, res) => {
         console.error('Erro ao atualizar status da carona:', err);
         res.status(500).json({ message: 'Erro ao atualizar status', error: err.message });
     }
-});
+};
+
+router.get('/nearby', getDriversNearbyHandler);
+router.get('/create', createRideHandler);
+router.get('/driver/:driverId', getDriverRidesHandler);
+router.get('/available', getAvailableRidesHandler);
+router.put('/:rideId', updateRideHandler);
+router.delete('/:rideId', cancelRideHandler);
+router.get('/:rideId', getRideDetailsHandler);
+router.post('/:rideId/request', requestRideHandler);
+router.get('/driver/:driverId/pending-requests', getPendingRequestsHandler);
+router.get('/:rideId/passengers', getPassengersHandler);
+router.put('/:rideId/passengers/:passengerId', responseRideHandler);
+router.get('/passengers/:passengerId/requests', getPassengerRequestsHandler);
+router.delete('/:rideId/requests/:passengerId', cancelRideRequestHandler);
+router.put('/:rideId/status', updateRideStatusHandler);
 
 export default router;
-
