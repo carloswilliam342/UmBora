@@ -5,7 +5,7 @@ const router = express.Router();
 
 // ROTA: POST /api/drivers/apply
 // Cadastrar novo motorista com localização e disponibilidade
-router.post('/apply', async (req, res) => {
+export const applyDriverHandler = async (req, res) => {
   const {
     userId,
     cnh,
@@ -82,11 +82,11 @@ router.post('/apply', async (req, res) => {
   } finally {
     client.release();
   }
-});
+};
 
 // ROTA: GET /api/drivers/profile/:userId
 // Buscar dados do motorista por userId
-router.get('/profile/:userId', async (req, res) => {
+export const getDriverProfile = async (req, res) => {
   const { userId } = req.params;
 
   try {
@@ -152,11 +152,11 @@ router.get('/profile/:userId', async (req, res) => {
     console.error('Erro ao buscar perfil do motorista:', err);
     res.status(500).json({ message: 'Erro interno do servidor.' });
   }
-});
+};
 
 // ROTA: PUT /api/drivers/profile/:userId
 // Atualizar dados do motorista
-router.put('/profile/:userId', async (req, res) => {
+export const updateDriverProfile = async (req, res) => {
   const { userId } = req.params;
   const {
     current_latitude,
@@ -255,6 +255,10 @@ router.put('/profile/:userId', async (req, res) => {
   } finally {
     client.release();
   }
-});
+};
+
+router.post('/apply', applyDriverHandler);
+router.get('/profile/:userId', getDriverProfile);
+router.put('/profile/:userId', updateDriverProfile);
 
 export default router;

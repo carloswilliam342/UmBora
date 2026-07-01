@@ -7,7 +7,7 @@ const saltRounds = 10;
 
 // ROTA: GET /api/users/:userId
 // Buscar dados do usuário por ID
-router.get('/:userId', async (req, res) => {
+export const getUserHandler = async (req, res) => {
     const { userId } = req.params;
 
     try {
@@ -37,11 +37,11 @@ router.get('/:userId', async (req, res) => {
         console.error('Erro ao buscar usuário:', err);
         res.status(500).json({ message: 'Erro interno do servidor.' });
     }
-});
+};
 
 // ROTA: PUT /api/users/:userId
 // Atualizar dados do usuário
-router.put('/:userId', async (req, res) => {
+export const updateUserHandler = async (req, res) => {
     const { userId } = req.params;
     const { name, email, phone, password } = req.body;
 
@@ -139,6 +139,9 @@ router.put('/:userId', async (req, res) => {
         console.error('Erro ao atualizar usuário:', err);
         res.status(500).json({ message: 'Erro interno do servidor.' });
     }
-});
+};
+
+router.get('/:userId', getUserHandler);
+router.put('/:userId', updateUserHandler);
 
 export default router;
