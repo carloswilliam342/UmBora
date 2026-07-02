@@ -48,3 +48,6 @@ yarn-error.*
 
 # Coverage
 coverage/
+
+# SonarQube scanner (gerado localmente)
+.scannerwork/
