@@ -132,8 +132,8 @@ export const getDriverProfile = async (req, res) => {
         email: driver.email,
         cnh: driver.cnh,
         location: driver.current_latitude && driver.current_longitude ? {
-          latitude: parseFloat(driver.current_latitude),
-          longitude: parseFloat(driver.current_longitude)
+          latitude: Number.parseFloat(driver.current_latitude),
+          longitude: Number.parseFloat(driver.current_longitude)
         } : null,
         isAvailable: driver.is_available,
         rating: driver.rating,

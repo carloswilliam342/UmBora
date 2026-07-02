@@ -19,9 +19,9 @@ export const getDriversNearbyHandler = async (req, res) => {
 
     try {
         // Converter para números
-        const latitude = parseFloat(lat);
-        const longitude = parseFloat(lng);
-        const radiusKm = parseFloat(radius);
+        const latitude = Number.parseFloat(lat);
+        const longitude = Number.parseFloat(lng);
+        const radiusKm = Number.parseFloat(radius);
 
         // Query para buscar motoristas próximos usando a fórmula de Haversine
         // Usa subquery para permitir filtrar pela distância calculada
@@ -70,11 +70,11 @@ export const getDriversNearbyHandler = async (req, res) => {
                 color: driver.vehicle_color,
             },
             location: {
-                latitude: parseFloat(driver.current_latitude),
-                longitude: parseFloat(driver.current_longitude),
+                latitude: Number.parseFloat(driver.current_latitude),
+                longitude: Number.parseFloat(driver.current_longitude),
             },
             rating: driver.rating || 0,
-            distance: parseFloat(driver.distance_km).toFixed(2),
+            distance: Number.parseFloat(driver.distance_km).toFixed(2),
         }));
 
         res.status(200).json({
@@ -178,17 +178,17 @@ export const getDriverRidesHandler = async (req, res) => {
             id: ride.id,
             origin: {
                 address: ride.origin_address,
-                latitude: parseFloat(ride.origin_latitude),
-                longitude: parseFloat(ride.origin_longitude)
+                latitude: Number.parseFloat(ride.origin_latitude),
+                longitude: Number.parseFloat(ride.origin_longitude)
             },
             destination: {
                 address: ride.destination_address,
-                latitude: parseFloat(ride.destination_latitude),
-                longitude: parseFloat(ride.destination_longitude)
+                latitude: Number.parseFloat(ride.destination_latitude),
+                longitude: Number.parseFloat(ride.destination_longitude)
             },
             departureTime: ride.departure_time,
             availableSeats: ride.available_seats,
-            pricePerSeat: parseFloat(ride.price_per_seat),
+            pricePerSeat: Number.parseFloat(ride.price_per_seat),
             status: ride.status,
             createdAt: ride.created_at
         }));
@@ -212,9 +212,9 @@ export const getAvailableRidesHandler = async (req, res) => {
     }
 
     try {
-        const latitude = parseFloat(lat);
-        const longitude = parseFloat(lng);
-        const radiusKm = parseFloat(radius);
+        const latitude = Number.parseFloat(lat);
+        const longitude = Number.parseFloat(lng);
+        const radiusKm = Number.parseFloat(radius);
         const searchTerm = searchText || ''; // Garantir que sempre seja string
 
         console.log('=== BUSCA DE CARONAS ===');
@@ -275,8 +275,8 @@ export const getAvailableRidesHandler = async (req, res) => {
         console.log('Total de caronas encontradas:', result.rows.length);
 
         const rides = result.rows.map(ride => {
-            const pendingCount = parseInt(ride.pending_seats) || 0;
-            const confirmedCount = parseInt(ride.confirmed_seats) || 0;
+            const pendingCount = Number.parseInt(ride.pending_seats) || 0;
+            const confirmedCount = Number.parseInt(ride.confirmed_seats) || 0;
             const totalReserved = pendingCount + confirmedCount;
             const actualAvailableSeats = Math.max(0, ride.available_seats - confirmedCount);
             const canRequestMore = totalReserved < ride.available_seats;
@@ -294,13 +294,13 @@ export const getAvailableRidesHandler = async (req, res) => {
                 },
                 origin: {
                     address: ride.origin_address,
-                    latitude: parseFloat(ride.origin_latitude),
-                    longitude: parseFloat(ride.origin_longitude)
+                    latitude: Number.parseFloat(ride.origin_latitude),
+                    longitude: Number.parseFloat(ride.origin_longitude)
                 },
                 destination: {
                     address: ride.destination_address,
-                    latitude: parseFloat(ride.destination_latitude),
-                    longitude: parseFloat(ride.destination_longitude)
+                    latitude: Number.parseFloat(ride.destination_latitude),
+                    longitude: Number.parseFloat(ride.destination_longitude)
                 },
                 departureTime: ride.departure_time,
                 availableSeats: actualAvailableSeats,
@@ -308,8 +308,8 @@ export const getAvailableRidesHandler = async (req, res) => {
                 pendingSeats: pendingCount,
                 confirmedSeats: confirmedCount,
                 canRequestMore: canRequestMore,
-                pricePerSeat: parseFloat(ride.price_per_seat),
-                distance: parseFloat(ride.distance_km).toFixed(2)
+                pricePerSeat: Number.parseFloat(ride.price_per_seat),
+                distance: Number.parseFloat(ride.distance_km).toFixed(2)
             };
 
             // Indicar se houve match textual
@@ -456,7 +456,7 @@ export const getRideDetailsHandler = async (req, res) => {
             [rideId]
         );
 
-        const confirmedPassengers = parseInt(passengersResult.rows[0].confirmed_count) || 0;
+        const confirmedPassengers = Number.parseInt(passengersResult.rows[0].confirmed_count) || 0;
         const actualAvailableSeats = ride.available_seats - confirmedPassengers;
 
         res.status(200).json({
@@ -476,19 +476,19 @@ export const getRideDetailsHandler = async (req, res) => {
                 },
                 origin: {
                     address: ride.origin_address,
-                    latitude: parseFloat(ride.origin_latitude),
-                    longitude: parseFloat(ride.origin_longitude)
+                    latitude: Number.parseFloat(ride.origin_latitude),
+                    longitude: Number.parseFloat(ride.origin_longitude)
                 },
                 destination: {
                     address: ride.destination_address,
-                    latitude: parseFloat(ride.destination_latitude),
-                    longitude: parseFloat(ride.destination_longitude)
+                    latitude: Number.parseFloat(ride.destination_latitude),
+                    longitude: Number.parseFloat(ride.destination_longitude)
                 },
                 departureTime: ride.departure_time,
                 totalSeats: ride.available_seats,
                 availableSeats: actualAvailableSeats,
                 confirmedPassengers,
-                pricePerSeat: parseFloat(ride.price_per_seat),
+                pricePerSeat: Number.parseFloat(ride.price_per_seat),
                 status: ride.status,
                 createdAt: ride.created_at
             }
@@ -545,8 +545,8 @@ export const requestRideHandler = async (req, res) => {
         }
 
         const ride = rideResult.rows[0];
-        const pendingSeats = parseInt(ride.pending_seats) || 0;
-        const confirmedSeats = parseInt(ride.confirmed_seats) || 0;
+        const pendingSeats = Number.parseInt(ride.pending_seats) || 0;
+        const confirmedSeats = Number.parseInt(ride.confirmed_seats) || 0;
         const totalReserved = pendingSeats + confirmedSeats;
         const remainingSlots = ride.available_seats - totalReserved;
 
@@ -671,13 +671,13 @@ export const getPendingRequestsHandler = async (req, res) => {
             ride: {
                 origin: {
                     address: req.origin_address,
-                    latitude: parseFloat(req.origin_latitude),
-                    longitude: parseFloat(req.origin_longitude)
+                    latitude: Number.parseFloat(req.origin_latitude),
+                    longitude: Number.parseFloat(req.origin_longitude)
                 },
                 destination: {
                     address: req.destination_address,
-                    latitude: parseFloat(req.destination_latitude),
-                    longitude: parseFloat(req.destination_longitude)
+                    latitude: Number.parseFloat(req.destination_latitude),
+                    longitude: Number.parseFloat(req.destination_longitude)
                 },
                 departureTime: req.departure_time
             }
@@ -759,7 +759,7 @@ export const responseRideHandler = async (req, res) => {
             }
 
             const ride = rideResult.rows[0];
-            const confirmedCount = parseInt(ride.confirmed_count) || 0;
+            const confirmedCount = Number.parseInt(ride.confirmed_count) || 0;
 
             if (confirmedCount >= ride.available_seats) {
                 return res.status(400).json({ message: 'Não há mais vagas disponíveis' });
@@ -840,16 +840,16 @@ export const getPassengerRequestsHandler = async (req, res) => {
             ride: {
                 origin: {
                     address: req.origin_address,
-                    latitude: parseFloat(req.origin_latitude),
-                    longitude: parseFloat(req.origin_longitude)
+                    latitude: Number.parseFloat(req.origin_latitude),
+                    longitude: Number.parseFloat(req.origin_longitude)
                 },
                 destination: {
                     address: req.destination_address,
-                    latitude: parseFloat(req.destination_latitude),
-                    longitude: parseFloat(req.destination_longitude)
+                    latitude: Number.parseFloat(req.destination_latitude),
+                    longitude: Number.parseFloat(req.destination_longitude)
                 },
                 departureTime: req.departure_time,
-                pricePerSeat: parseFloat(req.price_per_seat),
+                pricePerSeat: Number.parseFloat(req.price_per_seat),
                 status: req.ride_status
             },
             driver: {

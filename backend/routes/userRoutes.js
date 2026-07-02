@@ -53,7 +53,7 @@ export const updateUserHandler = async (req, res) => {
 
     // Validação de telefone (apenas números, 10-11 dígitos)
     const phoneRegex = /^\d{10,11}$/;
-    if (phone && !phoneRegex.test(phone.replace(/\D/g, ''))) {
+    if (phone && !phoneRegex.test(phone.replaceAll(/\D/g, ''))) {
         return res.status(400).json({
             message: 'Formato de telefone inválido. Use apenas números (10-11 dígitos).'
         });
@@ -94,7 +94,7 @@ export const updateUserHandler = async (req, res) => {
 
         if (phone !== undefined) {
             updateFields.push(`phone = $${paramIndex++}`);
-            updateValues.push(phone.replace(/\D/g, '')); // Remove caracteres não numéricos
+            updateValues.push(phone.replaceAll(/\D/g, '')); // Remove caracteres não numéricos
         }
 
         if (password !== undefined && password.trim() !== '') {
