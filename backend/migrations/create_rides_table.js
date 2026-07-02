@@ -54,40 +54,37 @@ async function createRidesTable() {
     `);
     console.log('✅ Tabela rides criada');
 
-    // Criar índices
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_rides_driver ON rides(driver_id)
-    `);
-    console.log('✅ Índice idx_rides_driver criado');
+    const indexes = [
+      {
+        sql: `CREATE INDEX IF NOT EXISTS idx_rides_driver ON rides(driver_id)`,
+        label: 'idx_rides_driver',
+      },
+      {
+        sql: `CREATE INDEX IF NOT EXISTS idx_rides_status ON rides(status)`,
+        label: 'idx_rides_status',
+      },
+      {
+        sql: `CREATE INDEX IF NOT EXISTS idx_rides_departure ON rides(departure_time)`,
+        label: 'idx_rides_departure',
+      },
+      {
+        sql: `CREATE INDEX IF NOT EXISTS idx_rides_origin_location ON rides(origin_latitude, origin_longitude)`,
+        label: 'idx_rides_origin_location',
+      },
+      {
+        sql: `CREATE INDEX IF NOT EXISTS idx_rides_destination_location ON rides(destination_latitude, destination_longitude)`,
+        label: 'idx_rides_destination_location',
+      },
+      {
+        sql: `CREATE INDEX IF NOT EXISTS idx_rides_available ON rides(status, departure_time) WHERE status = 'available'`,
+        label: 'idx_rides_available',
+      },
+    ];
 
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_rides_status ON rides(status)
-    `);
-    console.log('✅ Índice idx_rides_status criado');
-
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_rides_departure ON rides(departure_time)
-    `);
-    console.log('✅ Índice idx_rides_departure criado');
-
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_rides_origin_location 
-      ON rides(origin_latitude, origin_longitude)
-    `);
-    console.log('✅ Índice idx_rides_origin_location criado');
-
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_rides_destination_location 
-      ON rides(destination_latitude, destination_longitude)
-    `);
-    console.log('✅ Índice idx_rides_destination_location criado');
-
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_rides_available 
-      ON rides(status, departure_time) 
-      WHERE status = 'available'
-    `);
-    console.log('✅ Índice idx_rides_available criado');
+    for (const { sql, label } of indexes) {
+      await client.query(sql);
+      console.log(`✅ Índice ${label} criado`);
+    }
 
     await client.query('COMMIT');
 
@@ -113,12 +110,11 @@ async function createRidesTable() {
   }
 }
 
-createRidesTable()
-  .then(() => {
-    console.log('\n✅ Processo concluído!');
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('\n❌ Falha na migration:', error);
-    process.exit(1);
-  });
+try {
+  await createRidesTable();
+  console.log('\n✅ Processo concluído!');
+  process.exit(0);
+} catch (error) {
+  console.error('\n❌ Falha na migration:', error);
+  process.exit(1);
+}
