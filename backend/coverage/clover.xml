@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1782263289354" clover="3.2.0">
-  <project timestamp="1782263289354" name="All files">
+<coverage generated="1782947885393" clover="3.2.0">
+  <project timestamp="1782947885393" name="All files">
     <metrics statements="451" coveredstatements="451" conditionals="230" coveredconditionals="219" methods="29" coveredmethods="29" elements="710" coveredelements="699" complexity="0" loc="451" ncloc="451" packages="1" files="5" classes="5"/>
-    <file name="authRoutes.js" path="C:\Users\Yure Pires\Documents\UmBora\backend\routes\authRoutes.js">
+    <file name="authRoutes.js" path="C:\Users\Yure Pires\UmBora\backend\routes\authRoutes.js">
       <metrics statements="31" coveredstatements="31" conditionals="15" coveredconditionals="15" methods="2" coveredmethods="2"/>
       <line num="5" count="1" type="stmt"/>
       <line num="6" count="1" type="stmt"/>
@@ -36,7 +36,7 @@
       <line num="69" count="1" type="stmt"/>
       <line num="70" count="1" type="stmt"/>
     </file>
-    <file name="driverRoutes.js" path="C:\Users\Yure Pires\Documents\UmBora\backend\routes\driverRoutes.js">
+    <file name="driverRoutes.js" path="C:\Users\Yure Pires\UmBora\backend\routes\driverRoutes.js">
       <metrics statements="89" coveredstatements="89" conditionals="49" coveredconditionals="49" methods="3" coveredmethods="3"/>
       <line num="4" count="3" type="stmt"/>
       <line num="8" count="3" type="stmt"/>
@@ -128,7 +128,7 @@
       <line num="261" count="3" type="stmt"/>
       <line num="262" count="3" type="stmt"/>
     </file>
-    <file name="passengerRoutes.js" path="C:\Users\Yure Pires\Documents\UmBora\backend\routes\passengerRoutes.js">
+    <file name="passengerRoutes.js" path="C:\Users\Yure Pires\UmBora\backend\routes\passengerRoutes.js">
       <metrics statements="23" coveredstatements="23" conditionals="8" coveredconditionals="8" methods="2" coveredmethods="2"/>
       <line num="4" count="2" type="stmt"/>
       <line num="6" count="2" type="stmt"/>
@@ -154,7 +154,7 @@
       <line num="54" count="2" type="stmt"/>
       <line num="55" count="2" type="stmt"/>
     </file>
-    <file name="rideRoutes.js" path="C:\Users\Yure Pires\Documents\UmBora\backend\routes\rideRoutes.js">
+    <file name="rideRoutes.js" path="C:\Users\Yure Pires\UmBora\backend\routes\rideRoutes.js">
       <metrics statements="253" coveredstatements="253" conditionals="123" coveredconditionals="112" methods="20" coveredmethods="20"/>
       <line num="4" count="1" type="stmt"/>
       <line num="11" count="1" type="stmt"/>
@@ -410,7 +410,7 @@
       <line num="994" count="1" type="stmt"/>
       <line num="995" count="1" type="stmt"/>
     </file>
-    <file name="userRoutes.js" path="C:\Users\Yure Pires\Documents\UmBora\backend\routes\userRoutes.js">
+    <file name="userRoutes.js" path="C:\Users\Yure Pires\UmBora\backend\routes\userRoutes.js">
       <metrics statements="55" coveredstatements="55" conditionals="35" coveredconditionals="35" methods="2" coveredmethods="2"/>
       <line num="5" count="1" type="stmt"/>
       <line num="6" count="1" type="stmt"/>
