@@ -968,9 +968,18 @@ export const updateRideStatusHandler = async (req, res) => {
             [status, rideId]
         );
 
+        let statusMessage;
+        if (status === 'in_progress') {
+            statusMessage = 'iniciada';
+        } else if (status === 'completed') {
+            statusMessage = 'finalizada';
+        } else {
+            statusMessage = 'atualizada';
+        }
+
         res.status(200).json({
             success: true,
-            message: `Carona ${status === 'in_progress' ? 'iniciada' : status === 'completed' ? 'finalizada' : 'atualizada'} com sucesso`,
+            message: `Carona ${statusMessage} com sucesso`,
             ride: result.rows[0]
         });
     } catch (err) {

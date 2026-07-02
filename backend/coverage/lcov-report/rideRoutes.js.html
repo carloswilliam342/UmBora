@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">98.85% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>258/258</span>
+                <span class='fraction'>260/263</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">98.83% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>253/253</span>
+                <span class='fraction'>255/258</span>
             </div>
         
             
@@ -1059,7 +1059,16 @@
 <a name='L994'></a><a href='#L994'>994</a>
 <a name='L995'></a><a href='#L995'>995</a>
 <a name='L996'></a><a href='#L996'>996</a>
-<a name='L997'></a><a href='#L997'>997</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L997'></a><a href='#L997'>997</a>
+<a name='L998'></a><a href='#L998'>998</a>
+<a name='L999'></a><a href='#L999'>999</a>
+<a name='L1000'></a><a href='#L1000'>1000</a>
+<a name='L1001'></a><a href='#L1001'>1001</a>
+<a name='L1002'></a><a href='#L1002'>1002</a>
+<a name='L1003'></a><a href='#L1003'>1003</a>
+<a name='L1004'></a><a href='#L1004'>1004</a>
+<a name='L1005'></a><a href='#L1005'>1005</a>
+<a name='L1006'></a><a href='#L1006'>1006</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -2029,6 +2038,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2076,9 +2094,9 @@ export const getDriversNearbyHandler = async (req, res) =&gt; {
 &nbsp;
     try {
         // Converter para números
-        const latitude = parseFloat(lat);
-        const longitude = parseFloat(lng);
-        const radiusKm = parseFloat(radius);
+        const latitude = Number.parseFloat(lat);
+        const longitude = Number.parseFloat(lng);
+        const radiusKm = Number.parseFloat(radius);
 &nbsp;
         // Query para buscar motoristas próximos usando a fórmula de Haversine
         // Usa subquery para permitir filtrar pela distância calculada
@@ -2127,11 +2145,11 @@ export const getDriversNearbyHandler = async (req, res) =&gt; {
                 color: driver.vehicle_color,
             },
             location: {
-                latitude: parseFloat(driver.current_latitude),
-                longitude: parseFloat(driver.current_longitude),
+                latitude: Number.parseFloat(driver.current_latitude),
+                longitude: Number.parseFloat(driver.current_longitude),
             },
             rating: driver.rating || <span class="branch-1 cbranch-no" title="branch not covered" >0,</span>
-            distance: parseFloat(driver.distance_km).toFixed(2),
+            distance: Number.parseFloat(driver.distance_km).toFixed(2),
         }));
 &nbsp;
         res.status(200).json({
@@ -2235,17 +2253,17 @@ export const getDriverRidesHandler = async (req, res) =&gt; {
             id: ride.id,
             origin: {
                 address: ride.origin_address,
-                latitude: parseFloat(ride.origin_latitude),
-                longitude: parseFloat(ride.origin_longitude)
+                latitude: Number.parseFloat(ride.origin_latitude),
+                longitude: Number.parseFloat(ride.origin_longitude)
             },
             destination: {
                 address: ride.destination_address,
-                latitude: parseFloat(ride.destination_latitude),
-                longitude: parseFloat(ride.destination_longitude)
+                latitude: Number.parseFloat(ride.destination_latitude),
+                longitude: Number.parseFloat(ride.destination_longitude)
             },
             departureTime: ride.departure_time,
             availableSeats: ride.available_seats,
-            pricePerSeat: parseFloat(ride.price_per_seat),
+            pricePerSeat: Number.parseFloat(ride.price_per_seat),
             status: ride.status,
             createdAt: ride.created_at
         }));
@@ -2269,9 +2287,9 @@ export const getAvailableRidesHandler = async (req, res) =&gt; {
     }
 &nbsp;
     try {
-        const latitude = parseFloat(lat);
-        const longitude = parseFloat(lng);
-        const radiusKm = parseFloat(radius);
+        const latitude = Number.parseFloat(lat);
+        const longitude = Number.parseFloat(lng);
+        const radiusKm = Number.parseFloat(radius);
         const searchTerm = searchText || ''; // Garantir que sempre seja string
 &nbsp;
         console.log('=== BUSCA DE CARONAS ===');
@@ -2332,8 +2350,8 @@ export const getAvailableRidesHandler = async (req, res) =&gt; {
         console.log('Total de caronas encontradas:', result.rows.length);
 &nbsp;
         const rides = result.rows.map(ride =&gt; {
-            const pendingCount = parseInt(ride.pending_seats) || 0;
-            const confirmedCount = parseInt(ride.confirmed_seats) || <span class="branch-1 cbranch-no" title="branch not covered" >0;</span>
+            const pendingCount = Number.parseInt(ride.pending_seats) || 0;
+            const confirmedCount = Number.parseInt(ride.confirmed_seats) || <span class="branch-1 cbranch-no" title="branch not covered" >0;</span>
             const totalReserved = pendingCount + confirmedCount;
             const actualAvailableSeats = Math.max(0, ride.available_seats - confirmedCount);
             const canRequestMore = totalReserved &lt; ride.available_seats;
@@ -2351,13 +2369,13 @@ export const getAvailableRidesHandler = async (req, res) =&gt; {
                 },
                 origin: {
                     address: ride.origin_address,
-                    latitude: parseFloat(ride.origin_latitude),
-                    longitude: parseFloat(ride.origin_longitude)
+                    latitude: Number.parseFloat(ride.origin_latitude),
+                    longitude: Number.parseFloat(ride.origin_longitude)
                 },
                 destination: {
                     address: ride.destination_address,
-                    latitude: parseFloat(ride.destination_latitude),
-                    longitude: parseFloat(ride.destination_longitude)
+                    latitude: Number.parseFloat(ride.destination_latitude),
+                    longitude: Number.parseFloat(ride.destination_longitude)
                 },
                 departureTime: ride.departure_time,
                 availableSeats: actualAvailableSeats,
@@ -2365,8 +2383,8 @@ export const getAvailableRidesHandler = async (req, res) =&gt; {
                 pendingSeats: pendingCount,
                 confirmedSeats: confirmedCount,
                 canRequestMore: canRequestMore,
-                pricePerSeat: parseFloat(ride.price_per_seat),
-                distance: parseFloat(ride.distance_km).toFixed(2)
+                pricePerSeat: Number.parseFloat(ride.price_per_seat),
+                distance: Number.parseFloat(ride.distance_km).toFixed(2)
             };
 &nbsp;
             // Indicar se houve match textual
@@ -2513,7 +2531,7 @@ export const getRideDetailsHandler = async (req, res) =&gt; {
             [rideId]
         );
 &nbsp;
-        const confirmedPassengers = parseInt(passengersResult.rows[0].confirmed_count) || <span class="branch-1 cbranch-no" title="branch not covered" >0;</span>
+        const confirmedPassengers = Number.parseInt(passengersResult.rows[0].confirmed_count) || <span class="branch-1 cbranch-no" title="branch not covered" >0;</span>
         const actualAvailableSeats = ride.available_seats - confirmedPassengers;
 &nbsp;
         res.status(200).json({
@@ -2533,19 +2551,19 @@ export const getRideDetailsHandler = async (req, res) =&gt; {
                 },
                 origin: {
                     address: ride.origin_address,
-                    latitude: parseFloat(ride.origin_latitude),
-                    longitude: parseFloat(ride.origin_longitude)
+                    latitude: Number.parseFloat(ride.origin_latitude),
+                    longitude: Number.parseFloat(ride.origin_longitude)
                 },
                 destination: {
                     address: ride.destination_address,
-                    latitude: parseFloat(ride.destination_latitude),
-                    longitude: parseFloat(ride.destination_longitude)
+                    latitude: Number.parseFloat(ride.destination_latitude),
+                    longitude: Number.parseFloat(ride.destination_longitude)
                 },
                 departureTime: ride.departure_time,
                 totalSeats: ride.available_seats,
                 availableSeats: actualAvailableSeats,
                 confirmedPassengers,
-                pricePerSeat: parseFloat(ride.price_per_seat),
+                pricePerSeat: Number.parseFloat(ride.price_per_seat),
                 status: ride.status,
                 createdAt: ride.created_at
             }
@@ -2602,8 +2620,8 @@ export const requestRideHandler = async (req, res) =&gt; {
         }
 &nbsp;
         const ride = rideResult.rows[0];
-        const pendingSeats = parseInt(ride.pending_seats) || 0;
-        const confirmedSeats = parseInt(ride.confirmed_seats) || 0;
+        const pendingSeats = Number.parseInt(ride.pending_seats) || 0;
+        const confirmedSeats = Number.parseInt(ride.confirmed_seats) || 0;
         const totalReserved = pendingSeats + confirmedSeats;
         const remainingSlots = ride.available_seats - totalReserved;
 &nbsp;
@@ -2728,13 +2746,13 @@ export const getPendingRequestsHandler = async (req, res) =&gt; {
             ride: {
                 origin: {
                     address: req.origin_address,
-                    latitude: parseFloat(req.origin_latitude),
-                    longitude: parseFloat(req.origin_longitude)
+                    latitude: Number.parseFloat(req.origin_latitude),
+                    longitude: Number.parseFloat(req.origin_longitude)
                 },
                 destination: {
                     address: req.destination_address,
-                    latitude: parseFloat(req.destination_latitude),
-                    longitude: parseFloat(req.destination_longitude)
+                    latitude: Number.parseFloat(req.destination_latitude),
+                    longitude: Number.parseFloat(req.destination_longitude)
                 },
                 departureTime: req.departure_time
             }
@@ -2816,7 +2834,7 @@ export const responseRideHandler = async (req, res) =&gt; {
             }
 &nbsp;
             const ride = rideResult.rows[0];
-            const confirmedCount = parseInt(ride.confirmed_count) || <span class="branch-1 cbranch-no" title="branch not covered" >0;</span>
+            const confirmedCount = Number.parseInt(ride.confirmed_count) || <span class="branch-1 cbranch-no" title="branch not covered" >0;</span>
 &nbsp;
             if (confirmedCount &gt;= ride.available_seats) {
                 return res.status(400).json({ message: 'Não há mais vagas disponíveis' });
@@ -2897,16 +2915,16 @@ export const getPassengerRequestsHandler = async (req, res) =&gt; {
             ride: {
                 origin: {
                     address: req.origin_address,
-                    latitude: parseFloat(req.origin_latitude),
-                    longitude: parseFloat(req.origin_longitude)
+                    latitude: Number.parseFloat(req.origin_latitude),
+                    longitude: Number.parseFloat(req.origin_longitude)
                 },
                 destination: {
                     address: req.destination_address,
-                    latitude: parseFloat(req.destination_latitude),
-                    longitude: parseFloat(req.destination_longitude)
+                    latitude: Number.parseFloat(req.destination_latitude),
+                    longitude: Number.parseFloat(req.destination_longitude)
                 },
                 departureTime: req.departure_time,
-                pricePerSeat: parseFloat(req.price_per_seat),
+                pricePerSeat: Number.parseFloat(req.price_per_seat),
                 status: req.ride_status
             },
             driver: {
@@ -3025,9 +3043,18 @@ export const updateRideStatusHandler = async (req, res) =&gt; {
             [status, rideId]
         );
 &nbsp;
+        let statusMessage;
+        if (status === 'in_progress') {
+            statusMessage = 'iniciada';
+        } else <span class="cstat-no" title="statement not covered" ><span class="missing-if-branch" title="else path not taken" >E</span>if (status === 'completed') {</span>
+<span class="cstat-no" title="statement not covered" >            statusMessage = 'finalizada';</span>
+        } else {
+<span class="cstat-no" title="statement not covered" >            statusMessage = 'atualizada';</span>
+        }
+&nbsp;
         res.status(200).json({
             success: true,
-            message: `Carona ${status === 'in_progress' ? 'iniciada' : <span class="branch-1 cbranch-no" title="branch not covered" >status === 'completed' ? 'finalizada' : 'atualizada'}</span> com sucesso`,
+            message: `Carona ${statusMessage} com sucesso`,
             ride: result.rows[0]
         });
     } catch (err) {
@@ -3058,7 +3085,7 @@ export default router;</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-02T14:32:26.725Z
+                at 2026-07-02T17:23:22.973Z
             </div>
         <script src="prettify.js"></script>
         <script>

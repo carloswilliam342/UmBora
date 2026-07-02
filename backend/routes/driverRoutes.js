@@ -47,7 +47,7 @@ export const applyDriverHandler = async (req, res) => {
        (user_id, cnh, current_latitude, current_longitude, is_available, rating) 
        VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING id`,
-      [userId, cnh, current_latitude, current_longitude, is_available, 0.00]
+      [userId, cnh, current_latitude, current_longitude, is_available, 0]
     );
     const newDriverId = driverInsertResult.rows[0].id;
 
@@ -68,10 +68,10 @@ export const applyDriverHandler = async (req, res) => {
     await client.query('ROLLBACK');
 
     if (err.code === '23505') {
-      if (err.constraint && err.constraint.includes('cnh')) {
+      if (err.constraint?.includes('cnh')) {
         return res.status(409).json({ message: 'Esta CNH já está cadastrada.' });
       }
-      if (err.constraint && err.constraint.includes('placa')) {
+      if (err.constraint?.includes('placa')) {
         return res.status(409).json({ message: 'Esta placa de veículo já está cadastrada.' });
       }
       return res.status(409).json({ message: 'Dados duplicados. Verifique CNH e placa do veículo.' });
@@ -246,7 +246,7 @@ export const updateDriverProfile = async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK');
 
-    if (err.code === '23505' && err.constraint && err.constraint.includes('placa')) {
+    if (err.code === '23505' && err.constraint?.includes('placa')) {
       return res.status(409).json({ message: 'Esta placa de veículo já está cadastrada.' });
     }
 

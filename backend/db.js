@@ -11,7 +11,10 @@ export const pool  = new Pool({
     port: Number.parseInt(process.env.DB_PORT, 10),
 });
 
-pool.connect()
-  .then(() => console.log('Conectado ao banco de dados...'))
-  .catch(err => console.error('Falha na conexão ao DB: ', err))
+try {
+  await pool.connect();
+  console.log('Conectado ao banco de dados...');
+} catch (err) {
+  console.error('Falha na conexão ao DB: ', err);
+}
   

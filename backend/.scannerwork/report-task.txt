@@ -2,5 +2,5 @@ projectKey=umbora-backend
 serverUrl=https://sedimentologic-crescentlike-tijuana.ngrok-free.dev
 serverVersion=26.5.0.122743
 dashboardUrl=https://sedimentologic-crescentlike-tijuana.ngrok-free.dev/dashboard?id=umbora-backend
-ceTaskId=7ec9a7ed-0483-4819-b0c5-d0f33ff17a64
-ceTaskUrl=https://sedimentologic-crescentlike-tijuana.ngrok-free.dev/api/ce/task?id=7ec9a7ed-0483-4819-b0c5-d0f33ff17a64
+ceTaskId=141f498f-fa8f-4d36-bbd0-870640e2dbcb
+ceTaskUrl=https://sedimentologic-crescentlike-tijuana.ngrok-free.dev/api/ce/task?id=141f498f-fa8f-4d36-bbd0-870640e2dbcb
