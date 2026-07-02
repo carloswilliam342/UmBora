@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1782947885393" clover="3.2.0">
-  <project timestamp="1782947885393" name="All files">
+<coverage generated="1782953390114" clover="3.2.0">
+  <project timestamp="1782953390114" name="All files">
     <metrics statements="451" coveredstatements="451" conditionals="230" coveredconditionals="219" methods="29" coveredmethods="29" elements="710" coveredelements="699" complexity="0" loc="451" ncloc="451" packages="1" files="5" classes="5"/>
     <file name="authRoutes.js" path="C:\Users\Yure Pires\UmBora\backend\routes\authRoutes.js">
       <metrics statements="31" coveredstatements="31" conditionals="15" coveredconditionals="15" methods="2" coveredmethods="2"/>

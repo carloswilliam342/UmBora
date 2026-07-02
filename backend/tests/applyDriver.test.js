@@ -80,58 +80,45 @@ describe('POST /apply - Cadastro de Motorista', () => {
         expect(mockRelease).toHaveBeenCalled()
     })
 
-    test('Deve retornar 409 se a CNH já estiver cadastrada no banco', async () => {
+    test.each([
+        [
+            'drivers_cnh_key',
+            [mockResolvedValueOnce => {}, { rows: [] }],
+            'Esta CNH já está cadastrada.'
+        ],
+        [
+            'vehicles_placa_key',
+            [mockResolvedValueOnce => {}, { rows: [] }, { rows: [{ id: 99 }] }],
+            'Esta placa de veículo já está cadastrada.'
+        ],
+        [
+            'outra_constraint_qualquer',
+            [mockResolvedValueOnce => {}, { rows: [] }],
+            'Dados duplicados. Verifique CNH e placa do veículo.'
+        ],
+    ])('Deve retornar 409 para violação de unicidade na constraint "%s"', async (constraint, _resolvedValues, expectedMessage) => {
         const dbError = new Error('Erro de BD')
         dbError.code = '23505'
-        dbError.constraint = 'drivers_cnh_key'
+        dbError.constraint = constraint
 
-        mockQuery
-            .mockResolvedValueOnce({})
-            .mockResolvedValueOnce({ rows: [] })
-            .mockRejectedValueOnce(dbError)
+        if (constraint === 'drivers_cnh_key' || constraint === 'outra_constraint_qualquer') {
+            mockQuery
+                .mockResolvedValueOnce({})
+                .mockResolvedValueOnce({ rows: [] })
+                .mockRejectedValueOnce(dbError)
+        } else {
+            mockQuery
+                .mockResolvedValueOnce({})
+                .mockResolvedValueOnce({ rows: [] })
+                .mockResolvedValueOnce({ rows: [{ id: 99 }] })
+                .mockRejectedValueOnce(dbError)
+        }
 
         await applyDriverHandler(req, res)
 
         expect(mockQuery).toHaveBeenCalledWith('ROLLBACK')
         expect(res.status).toHaveBeenCalledWith(409)
-        expect(res.json).toHaveBeenCalledWith({ message: 'Esta CNH já está cadastrada.' })
-        expect(mockRelease).toHaveBeenCalled()
-    })
-
-    test('Deve retornar 409 se a placa do veículo já estiver cadastrada', async () => {
-        const dbError = new Error('Erro de BD')
-        dbError.code = '23505'
-        dbError.constraint = 'vehicles_placa_key'
-
-        mockQuery
-        .mockResolvedValueOnce({})
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [{ id: 99 }] })
-        .mockRejectedValueOnce(dbError)
-
-        await applyDriverHandler(req, res)
-
-        expect(mockQuery).toHaveBeenCalledWith('ROLLBACK')
-        expect(res.status).toHaveBeenCalledWith(409)
-        expect(res.json).toHaveBeenCalledWith({ message: 'Esta placa de veículo já está cadastrada.' })
-        expect(mockRelease).toHaveBeenCalled()
-    })
-
-    test('Deve retornar 409 para dados duplicados genéricos', async () => {
-        const dbError = new Error('Erro de BD')
-        dbError.code = '23505'
-        dbError.constraint = 'outra_constraint_qualquer'
-
-        mockQuery
-        .mockResolvedValueOnce({})
-        .mockResolvedValueOnce({ rows: [] })
-        .mockRejectedValueOnce(dbError)
-
-        await applyDriverHandler(req, res)
-
-        expect(mockQuery).toHaveBeenCalledWith('ROLLBACK')
-        expect(res.status).toHaveBeenCalledWith(409)
-        expect(res.json).toHaveBeenCalledWith({ message: 'Dados duplicados. Verifique CNH e placa do veículo.' })
+        expect(res.json).toHaveBeenCalledWith({ message: expectedMessage })
         expect(mockRelease).toHaveBeenCalled()
     })
 

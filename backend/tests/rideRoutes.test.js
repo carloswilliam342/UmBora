@@ -353,18 +353,13 @@ describe('Rotas de Caronas (Rides)', () => {
             expect(res.status).toHaveBeenCalledWith(400)
         })
 
-        test('Deve retornar 400 se solicitação já existe como pending', async () => {
+        test.each([
+            ['pending'],
+            ['confirmed'],
+        ])('Deve retornar 400 se solicitação já existe como %s', async (status) => {
             mockQuery
                 .mockResolvedValueOnce({ rows: [{ id: 42, available_seats: 4, pending_seats: 0, confirmed_seats: 0 }] })
-                .mockResolvedValueOnce({ rows: [{ status: 'pending' }] })
-            await requestRideHandler(req, res)
-            expect(res.status).toHaveBeenCalledWith(400)
-        })
-
-        test('Deve retornar 400 se solicitação já existe como confirmed', async () => {
-            mockQuery
-                .mockResolvedValueOnce({ rows: [{ id: 42, available_seats: 4, pending_seats: 0, confirmed_seats: 0 }] })
-                .mockResolvedValueOnce({ rows: [{ status: 'confirmed' }] })
+                .mockResolvedValueOnce({ rows: [{ status }] })
             await requestRideHandler(req, res)
             expect(res.status).toHaveBeenCalledWith(400)
         })
