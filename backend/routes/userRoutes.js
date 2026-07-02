@@ -46,7 +46,7 @@ export const updateUserHandler = async (req, res) => {
     const { name, email, phone, password } = req.body;
 
     // Validação de email (formato básico)
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@.]+\.[^\s@]+$/;
     if (email && !emailRegex.test(email)) {
         return res.status(400).json({ message: 'Formato de e-mail inválido.' });
     }
