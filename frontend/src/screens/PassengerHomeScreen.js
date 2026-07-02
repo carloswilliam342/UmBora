@@ -74,13 +74,17 @@ const PassengerHomeScreen = () => {
 
     const getUserLocation = async () => {
         try {
+            console.log('Solicitando permissão...');
             let { status } = await Location.requestForegroundPermissionsAsync();
+            console.log('Permissão:', status);
             if (status !== 'granted') {
                 setErrorMsg('Permissão de localização negada');
                 return;
             }
 
+            console.log('Buscando localização...');
             let location = await Location.getCurrentPositionAsync({});
+            console.log('Localização:', location);
             const userCoords = {
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
@@ -93,7 +97,9 @@ const PassengerHomeScreen = () => {
                 longitudeDelta: 0.05,
             });
 
+            console.log('Buscando caronas...');
             await fetchAvailableRides(userCoords.latitude, userCoords.longitude);
+            console.log('Busca finalizada');
         } catch (error) {
             console.error('Erro ao obter localização:', error);
             setErrorMsg('Erro ao obter localização');
@@ -180,7 +186,9 @@ const PassengerHomeScreen = () => {
     };
 
     const handleRequestRide = async () => {
+        console.log('handleRequestRide chamado! passengerId:', passengerId, 'selectedRide:', selectedRide?.id, 'numberOfPassengers:', numberOfPassengers, 'paymentMethod:', paymentMethod);
         if (!passengerId) {
+            console.log('FALHA: passengerId nao encontrado!');
             Alert.alert(
                 'Cadastro Incompleto',
                 'Você precisa completar seu cadastro de passageiro para solicitar caronas.',
@@ -198,10 +206,14 @@ const PassengerHomeScreen = () => {
             return;
         }
 
-        if (!selectedRide) return;
+        if (!selectedRide) {
+            console.log('FALHA: selectedRide nao encontrado!');
+            return;
+        }
 
         // Validar quantidade de passageiros
         if (numberOfPassengers < 1 || numberOfPassengers > selectedRide.availableSeats) {
+            console.log('FALHA: numberOfPassengers invalido!');
             Alert.alert(
                 'Quantidade Inválida',
                 `Por favor, selecione entre 1 e ${selectedRide.availableSeats} passageiro(s).`
@@ -211,6 +223,7 @@ const PassengerHomeScreen = () => {
 
         // Validar forma de pagamento
         if (!paymentMethod) {
+            console.log('FALHA: paymentMethod nao encontrado!');
             Alert.alert(
                 'Forma de Pagamento',
                 'Por favor, selecione uma forma de pagamento.'
@@ -218,6 +231,7 @@ const PassengerHomeScreen = () => {
             return;
         }
 
+        console.log('Enviando requestRide...');
         setRequesting(true);
         try {
             const response = await requestRide(
@@ -226,6 +240,7 @@ const PassengerHomeScreen = () => {
                 numberOfPassengers,
                 paymentMethod
             );
+            console.log('RequestRide success:', response);
 
             Alert.alert(
                 '✅ Solicitação Enviada!',
@@ -246,12 +261,15 @@ const PassengerHomeScreen = () => {
                 await fetchAvailableRides(userLocation.latitude, userLocation.longitude);
             }
         } catch (error) {
+            console.log('RequestRide error:', error);
             const errorMessage = error.response?.data?.message || 'Erro ao solicitar vaga.';
             Alert.alert('Erro', errorMessage);
         } finally {
             setRequesting(false);
         }
     };
+
+    console.log('RENDER:', { userLocation: !!userLocation, region: !!region, MapView: !!MapView, Marker: !!Marker, rides: rides.length, os: Platform.OS });
 
     return (
         <View style={styles.container}>
@@ -545,6 +563,7 @@ const PassengerHomeScreen = () => {
                                                         paymentMethod === 'cash' && styles.paymentOptionSelected
                                                     ]}
                                                     onPress={() => setPaymentMethod('cash')}
+                                                    testID="payment-method-cash"
                                                 >
                                                     <Text style={styles.paymentIcon}>💵</Text>
                                                     <Text style={[
@@ -582,7 +601,6 @@ const PassengerHomeScreen = () => {
                                         </View>
                                     </View>
                                 )}
-
                                 {/* Botão de Solicitar */}
                                 <TouchableOpacity
                                     style={[
@@ -592,6 +610,7 @@ const PassengerHomeScreen = () => {
                                     onPress={handleRequestRide}
                                     disabled={selectedRide.canRequestMore === false || requesting}
                                     activeOpacity={0.8}
+                                    testID="request-ride-button"
                                 >
                                     {requesting ? (
                                         <ActivityIndicator color="#fff" />
